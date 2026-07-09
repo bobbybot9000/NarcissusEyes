@@ -13,7 +13,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         deviceCoordinator.onCameraChange = { [weak self] device in
             self?.cameraController.reconfigure(device: device)
-            self?.faceWindow.showTransitionVeil()
+            self?.faceWindow.beginTransitionBlur()
         }
         deviceCoordinator.onScreenChange = { [weak self] screen in
             self?.faceWindow.setPreferredScreen(screen)

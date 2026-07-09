@@ -123,16 +123,16 @@ final class FaceWindow: NSObject {
         positionAtTop(restoringSavedX: false, on: screen)
     }
 
-    /// Briefly frosts over the Mirror to mask the visible zoom/settle jank while a
+    /// Briefly blurs the Mirror's feed to mask the visible zoom/settle jank while a
     /// crop mode or camera switch takes effect.
-    func showTransitionVeil() {
-        faceView.flashTransitionVeil()
+    func beginTransitionBlur() {
+        faceView.beginTransitionBlur()
     }
 
     // MARK: - Crop mode / transparency
 
     private func applyCropMode(_ mode: CropMode) {
-        faceView.flashTransitionVeil()
+        faceView.beginTransitionBlur()
 
         let targetSize = mode == .face ? FaceWindow.faceSize : FaceWindow.eyesSize
         guard targetSize != currentSize else { return }

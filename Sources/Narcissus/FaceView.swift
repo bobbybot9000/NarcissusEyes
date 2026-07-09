@@ -9,7 +9,6 @@ final class FaceView: NSView, CameraFrameReceiver {
     private let shapeMask = CAShapeLayer()
     private let bottomCornerRadius: CGFloat = 28
     private let dockView = MirrorDockView(frame: NSRect(x: 0, y: 0, width: 84, height: 22))
-    private let veilView = NSVisualEffectView()
 
     /// Called when a drag begins (mouse down), before any movement.
     var onDragStart: (() -> Void)?
@@ -28,8 +27,25 @@ final class FaceView: NSView, CameraFrameReceiver {
     private var currentCropMode: CropMode = .face
     private var isTransparent = false
     private var trackingArea: NSTrackingArea?
-    private var veilSafetyTimer: Timer?
-    private var isVeiled = false
+    private var blurSafetyTimer: Timer?
+
+    // MARK: - Transition blur state
+    //
+    // Read/written from both the main queue (trigger/settle) and the camera's
+    // background output queue (per-frame radius sampling in cameraController(_:didOutput:)).
+    // All fields are plain scalars for the same reason `currentCropMode`/`faceTracker.mode`
+    // already cross threads informally elsewhere in this view — word-sized reads/writes
+    // don't tear in practice, and a lock would be overkill for a cosmetic effect.
+    private var blurActive = false
+    private var blurStartTime: CFAbsoluteTime = 0
+    private var blurExitTime: CFAbsoluteTime?
+    private var blurExitStartRadius: CGFloat = 0
+
+    private let blurEnterDuration: CFAbsoluteTime = 0.15
+    private let blurExitDuration: CFAbsoluteTime = 0.35
+    private let blurBaseRadius: CGFloat = 14
+    private let blurOscillationAmplitude: CGFloat = 5
+    private let blurOscillationPeriod: CFAbsoluteTime = 1.3
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
@@ -40,13 +56,6 @@ final class FaceView: NSView, CameraFrameReceiver {
         displayLayer.frame = bounds
         displayLayer.contentsGravity = .resizeAspectFill
         layer?.addSublayer(displayLayer)
-
-        veilView.frame = bounds
-        veilView.material = .hudWindow
-        veilView.blendingMode = .withinWindow
-        veilView.state = .active
-        veilView.alphaValue = 0
-        addSubview(veilView)
 
         addSubview(dockView)
         dockView.onFaceTapped = { [weak self] in self?.setCropMode(.face) }
@@ -64,63 +73,53 @@ final class FaceView: NSView, CameraFrameReceiver {
     override func layout() {
         super.layout()
         displayLayer.frame = bounds
-        veilView.frame = bounds
         updateShapeMask()
         layoutDockView()
     }
 
-    // MARK: - Transition veil
+    // MARK: - Transition blur
+    //
+    // Masks the visible zoom/settle jank while a crop mode or camera switch takes
+    // effect by blurring the live feed itself (rather than covering it with an
+    // opaque overlay) — the blur radius ramps in, gently oscillates so there's
+    // still visible "life" (real blurred motion) while tracking converges, then
+    // ramps back to zero the instant `FaceTracker.awaitSettle` fires. A safety
+    // timeout guards against Vision never quite converging (e.g. face out of frame).
 
-    /// Frosts over the feed to mask the visible zoom/settle jank while a crop mode
-    /// or camera switch takes effect: fade in immediately, pulse gently for as long
-    /// as face tracking is still converging, then fade out the instant it actually
-    /// settles (via `FaceTracker.awaitSettle`) — so the veil's duration always
-    /// matches the real settle time instead of a guessed fixed delay. A safety
-    /// timeout guards against Vision never quite converging (e.g. face out of frame).
-    func flashTransitionVeil() {
-        isVeiled = true
-        veilSafetyTimer?.invalidate()
-
-        NSAnimationContext.runAnimationGroup({ context in
-            context.duration = 0.12
-            context.timingFunction = CAMediaTimingFunction(name: .easeOut)
-            veilView.animator().alphaValue = 1
-        }, completionHandler: { [weak self] in
-            self?.startVeilPulse()
-        })
+    func beginTransitionBlur() {
+        blurActive = true
+        blurStartTime = CFAbsoluteTimeGetCurrent()
+        blurExitTime = nil
+        blurSafetyTimer?.invalidate()
 
         faceTracker.awaitSettle { [weak self] in
-            self?.resolveVeil()
+            self?.beginBlurExit()
         }
-        veilSafetyTimer = Timer.scheduledTimer(withTimeInterval: 2.5, repeats: false) { [weak self] _ in
-            self?.resolveVeil()
+        blurSafetyTimer = Timer.scheduledTimer(withTimeInterval: 2.5, repeats: false) { [weak self] _ in
+            self?.beginBlurExit()
         }
     }
 
-    private func startVeilPulse() {
-        guard isVeiled else { return }
-        let pulse = CABasicAnimation(keyPath: "opacity")
-        pulse.fromValue = 1.0
-        pulse.toValue = 0.78
-        pulse.duration = 0.6
-        pulse.autoreverses = true
-        pulse.repeatCount = .infinity
-        pulse.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
-        veilView.layer?.add(pulse, forKey: "veilPulse")
+    private func beginBlurExit() {
+        guard blurActive, blurExitTime == nil else { return }
+        blurExitStartRadius = currentBlurRadius(at: CFAbsoluteTimeGetCurrent())
+        blurExitTime = CFAbsoluteTimeGetCurrent()
+        blurSafetyTimer?.invalidate()
+        blurSafetyTimer = nil
     }
 
-    private func resolveVeil() {
-        guard isVeiled else { return }
-        isVeiled = false
-        veilSafetyTimer?.invalidate()
-        veilSafetyTimer = nil
-        veilView.layer?.removeAnimation(forKey: "veilPulse")
-
-        NSAnimationContext.runAnimationGroup { context in
-            context.duration = 0.4
-            context.timingFunction = CAMediaTimingFunction(name: .easeIn)
-            veilView.animator().alphaValue = 0
+    /// The blur radius at a given time: ramping in and oscillating while active,
+    /// or ramping back down to zero once exiting. Called from the camera's
+    /// background output queue once per frame.
+    private func currentBlurRadius(at time: CFAbsoluteTime) -> CGFloat {
+        guard blurActive else { return 0 }
+        if let exitTime = blurExitTime {
+            let t = min((time - exitTime) / blurExitDuration, 1)
+            return blurExitStartRadius * CGFloat(1 - t)
         }
+        let envelope = min((time - blurStartTime) / blurEnterDuration, 1)
+        let oscillation = blurBaseRadius + blurOscillationAmplitude * CGFloat(sin(2 * .pi * (time - blurStartTime) / blurOscillationPeriod))
+        return oscillation * CGFloat(envelope)
     }
 
     private func layoutDockView() {
@@ -226,8 +225,28 @@ final class FaceView: NSView, CameraFrameReceiver {
             width: cropRect.width * extent.width,
             height: cropRect.height * extent.height
         ).intersection(extent)
+        guard !pixelCrop.isEmpty else { return }
 
-        guard !pixelCrop.isEmpty, let cgImage = ciContext.createCGImage(ciImage, from: pixelCrop) else { return }
+        let now = CFAbsoluteTimeGetCurrent()
+        let radius = currentBlurRadius(at: now)
+        if let exitTime = blurExitTime, now - exitTime >= blurExitDuration {
+            blurActive = false
+            blurExitTime = nil
+        }
+
+        let outputImage: CIImage
+        if radius > 0.5 {
+            // Blur needs source pixels beyond the crop edge to avoid falloff at the
+            // border, so crop a padded region first, blur that, then render just
+            // the original crop rect out of it.
+            let padding = radius * 3
+            let paddedCrop = pixelCrop.insetBy(dx: -padding, dy: -padding).intersection(extent)
+            outputImage = ciImage.cropped(to: paddedCrop).applyingGaussianBlur(sigma: radius)
+        } else {
+            outputImage = ciImage
+        }
+
+        guard let cgImage = ciContext.createCGImage(outputImage, from: pixelCrop) else { return }
 
         DispatchQueue.main.async { [weak self] in
             self?.displayLayer.contents = cgImage
