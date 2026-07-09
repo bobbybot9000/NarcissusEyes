@@ -18,6 +18,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         deviceCoordinator.onScreenChange = { [weak self] screen in
             self?.faceWindow.setPreferredScreen(screen)
         }
+        faceWindow.onUserRelocatedToScreen = { [weak self] screen in
+            self?.deviceCoordinator.userRelocated(to: screen)
+        }
         deviceCoordinator.resolveInitial()
 
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)

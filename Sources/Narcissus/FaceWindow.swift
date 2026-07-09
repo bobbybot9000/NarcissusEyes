@@ -19,6 +19,12 @@ final class FaceWindow: NSObject {
 
     private var currentSize = FaceWindow.faceSize
     private var preferredScreen: NSScreen?
+    private var dragStartScreen: NSScreen?
+
+    /// Called when a drag ends having landed on a different screen than it
+    /// started on, so the owner can force the camera to match (built-in cam for
+    /// the built-in display, external otherwise).
+    var onUserRelocatedToScreen: ((NSScreen) -> Void)?
 
     // Drag-follow state (the "sticky" lag while actively dragging).
     private var dragTicker: Timer?
@@ -136,10 +142,16 @@ final class FaceWindow: NSObject {
 
         let targetSize = mode == .face ? FaceWindow.faceSize : FaceWindow.eyesSize
         guard targetSize != currentSize else { return }
+        // Preserve the horizontal *center*, not the left edge — face (140pt) and
+        // eyes (200pt) are different widths, so keeping the same left edge would
+        // shift the visual center sideways, drifting away from wherever the user
+        // deliberately anchored the Mirror under their webcam.
+        let centerX = currentX + currentSize.width / 2
         currentSize = targetSize
+        let proposedX = centerX - currentSize.width / 2
 
         guard let screen = resolveScreen() else { return }
-        let resolved = resolveDock(for: currentX, on: screen, previousMode: dockMode)
+        let resolved = resolveDock(for: proposedX, on: screen, previousMode: dockMode)
         dockMode = resolved.mode
 
         NSAnimationContext.runAnimationGroup { context in
@@ -213,8 +225,7 @@ final class FaceWindow: NSObject {
         }
 
         let notchCenterX = (left.maxX + right.minX) / 2
-        let notchWidth = right.minX - left.maxX
-        let notchHalfWidth = notchWidth / 2
+        let notchHalfWidth = (right.minX - left.maxX) / 2
         let captureMargin: CGFloat = 40
         let hysteresisBonus: CGFloat = 24
         let halfWidth = notchHalfWidth + captureMargin + (previousMode == .belowNotch ? hysteresisBonus : 0)
@@ -224,6 +235,24 @@ final class FaceWindow: NSObject {
             return topEdgeResult
         }
 
+        guard let forced = forcedBelowNotchDock(on: screen) else {
+            return topEdgeResult
+        }
+        return forced
+    }
+
+    /// The below-notch dock geometry regardless of horizontal proximity — used
+    /// both by `resolveDock`'s normal proximity-based resolution and to force a
+    /// notch dock outright when the Mirror is deliberately dragged onto this
+    /// screen. Returns nil if this screen has no notch to dock under.
+    private func forcedBelowNotchDock(on screen: NSScreen) -> (mode: DockMode, x: CGFloat, y: CGFloat, width: CGFloat)? {
+        guard #available(macOS 12.0, *),
+              let left = screen.auxiliaryTopLeftArea,
+              let right = screen.auxiliaryTopRightArea else {
+            return nil
+        }
+        let screenFrame = screen.frame
+        let notchWidth = right.minX - left.maxX
         let notchBottomY = left.minY
         let belowNotchX = min(max(left.maxX, screenFrame.minX), screenFrame.maxX - notchWidth)
         return (.belowNotch, belowNotchX, notchBottomY - currentSize.height + notchOverlap, notchWidth)
@@ -256,6 +285,7 @@ final class FaceWindow: NSObject {
         settleTicker?.invalidate()
         settleTicker = nil
         targetX = currentX
+        dragStartScreen = screenUnderMouse() ?? resolveScreen()
 
         dragTicker?.invalidate()
         dragTicker = Timer.scheduledTimer(withTimeInterval: tickInterval, repeats: true) { [weak self] _ in
@@ -287,7 +317,23 @@ final class FaceWindow: NSObject {
         dragTicker = nil
 
         guard let screen = screenUnderMouse() ?? resolveScreen() else { return }
-        let resolved = resolveDock(for: currentX, on: screen, previousMode: dockMode)
+
+        // Landing on a different screen than the drag started on is a deliberate
+        // "move me here" gesture — force the camera to match, and if it's the
+        // built-in display, force the notch dock outright regardless of exactly
+        // where on the screen it was dropped, so the user doesn't have to
+        // fine-tune the drop position for the anchor to take.
+        let landedOnNewScreen = dragStartScreen.map { $0 !== screen } ?? false
+        if landedOnNewScreen {
+            onUserRelocatedToScreen?(screen)
+        }
+
+        let resolved: (mode: DockMode, x: CGFloat, y: CGFloat, width: CGFloat)
+        if landedOnNewScreen, screen.isBuiltIn, let forced = forcedBelowNotchDock(on: screen) {
+            resolved = forced
+        } else {
+            resolved = resolveDock(for: currentX, on: screen, previousMode: dockMode)
+        }
         dockMode = resolved.mode
         beginSettle(toX: resolved.x, toY: resolved.y, toWidth: resolved.width)
 

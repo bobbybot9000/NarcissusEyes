@@ -87,26 +87,47 @@ final class DeviceCoordinator {
     // MARK: - Screen
 
     private func resolveScreen() {
-        guard let screen = preferredScreen(), displayID(for: screen) != lastScreenID else { return }
-        lastScreenID = displayID(for: screen)
+        guard let screen = preferredScreen(), screen.narcissusDisplayID != lastScreenID else { return }
+        lastScreenID = screen.narcissusDisplayID
         onScreenChange?(screen)
     }
 
     private func preferredScreen() -> NSScreen? {
         let screens = NSScreen.screens
-        if let external = screens.first(where: { !isBuiltIn($0) }) {
+        if let external = screens.first(where: { !$0.isBuiltIn }) {
             return external
         }
-        return screens.first(where: { isBuiltIn($0) }) ?? NSScreen.main
+        return screens.first(where: { $0.isBuiltIn }) ?? NSScreen.main
     }
 
-    private func isBuiltIn(_ screen: NSScreen) -> Bool {
-        guard let id = displayID(for: screen) else { return false }
+    // MARK: - Manual relocation (user dragged the Mirror onto a different screen)
+
+    /// Called when the user deliberately drags the Mirror onto a different screen.
+    /// Forces the camera to match that screen (built-in cam for the built-in
+    /// display, else the usual "prefer external" pick) and updates the dedupe
+    /// bookkeeping so a later automatic re-resolve (from an unrelated device
+    /// event) doesn't fight the user's placement by snapping the camera back.
+    func userRelocated(to screen: NSScreen) {
+        lastScreenID = screen.narcissusDisplayID
+
+        let devices = discoverCameras()
+        let device = screen.isBuiltIn
+            ? devices.first(where: { $0.deviceType == .builtInWideAngleCamera })
+            : (devices.first(where: { $0.deviceType != .builtInWideAngleCamera }) ?? devices.first)
+        guard let device else { return }
+        lastCameraID = device.uniqueID
+        onCameraChange?(device)
+    }
+}
+
+extension NSScreen {
+    var isBuiltIn: Bool {
+        guard let id = narcissusDisplayID else { return false }
         return CGDisplayIsBuiltin(id) != 0
     }
 
-    private func displayID(for screen: NSScreen) -> CGDirectDisplayID? {
-        guard let number = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber else {
+    var narcissusDisplayID: CGDirectDisplayID? {
+        guard let number = deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber else {
             return nil
         }
         return CGDirectDisplayID(number.uint32Value)
