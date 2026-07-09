@@ -1,0 +1,4 @@
+.build/
+Narcissus.app/
+*.xcodeproj/xcuserdata/
+.DS_Store
