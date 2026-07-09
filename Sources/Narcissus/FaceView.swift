@@ -70,22 +70,47 @@ final class FaceView: NSView, CameraFrameReceiver {
     // MARK: - Transition veil
 
     /// Briefly frosts over the feed to mask the visible zoom/settle jank while a
-    /// crop mode or camera switch takes effect: fade in quickly, hold, fade out.
+    /// crop mode or camera switch takes effect: fade in, a gentle "breathe" dip so
+    /// it never reads as frozen while the crop settles (~1s), then fade out.
+    /// Deliberately just a generously-timed fixed animation rather than something
+    /// wired to Vision's internal "detection settled" state — keeps this cosmetic
+    /// mask simple and decoupled from the tracking pipeline.
     func flashTransitionVeil() {
         NSAnimationContext.runAnimationGroup({ context in
             context.duration = 0.12
             context.timingFunction = CAMediaTimingFunction(name: .easeOut)
             veilView.animator().alphaValue = 1
         }, completionHandler: { [weak self] in
-            guard let self else { return }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                NSAnimationContext.runAnimationGroup { context in
-                    context.duration = 0.35
-                    context.timingFunction = CAMediaTimingFunction(name: .easeIn)
-                    self.veilView.animator().alphaValue = 0
-                }
-            }
+            self?.breatheVeilDown()
         })
+    }
+
+    private func breatheVeilDown() {
+        NSAnimationContext.runAnimationGroup({ context in
+            context.duration = 0.35
+            context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            veilView.animator().alphaValue = 0.82
+        }, completionHandler: { [weak self] in
+            self?.breatheVeilUp()
+        })
+    }
+
+    private func breatheVeilUp() {
+        NSAnimationContext.runAnimationGroup({ context in
+            context.duration = 0.35
+            context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            veilView.animator().alphaValue = 1
+        }, completionHandler: { [weak self] in
+            self?.fadeVeilOut()
+        })
+    }
+
+    private func fadeVeilOut() {
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.4
+            context.timingFunction = CAMediaTimingFunction(name: .easeIn)
+            veilView.animator().alphaValue = 0
+        }
     }
 
     private func layoutDockView() {

@@ -41,6 +41,12 @@ final class FaceWindow: NSObject {
     private let dragFollowFactor: CGFloat = 0.35
     private let springStiffness: CGFloat = 300
     private let springDamping: CGFloat = 24
+    /// How far the Mirror's top sits *behind* the notch's bottom edge while docked
+    /// below it. The notch is a true hardware cutout with no visible pixels, so
+    /// this overlap is invisible — it hides any seam from the notch's rounded
+    /// corners not matching the Mirror's square top corners, without needing to
+    /// know the notch's exact corner radius.
+    private let notchOverlap: CGFloat = 5
 
     init(cameraController: CameraController) {
         faceView = FaceView(frame: NSRect(origin: .zero, size: FaceWindow.faceSize))
@@ -104,11 +110,17 @@ final class FaceWindow: NSObject {
     }
 
     /// Called by DeviceCoordinator when the preferred screen (built-in vs external
-    /// display) changes. Re-docks the Mirror onto the new screen.
+    /// display) changes. Re-docks the Mirror onto the new screen. This must force
+    /// the relocation rather than going through `resolveScreen()` — that helper
+    /// intentionally favors the screen the panel is *already* on (so in-place
+    /// operations like a crop-mode toggle don't get yanked onto a different
+    /// display), but a device hot-swap is exactly the case where we *do* want to
+    /// move: e.g. replugging a dock should bring the Mirror back to the external
+    /// display, not leave it stranded on the laptop's notch.
     func setPreferredScreen(_ screen: NSScreen) {
         preferredScreen = screen
         dockMode = .topEdge
-        positionAtTop(restoringSavedX: false)
+        positionAtTop(restoringSavedX: false, on: screen)
     }
 
     /// Briefly frosts over the Mirror to mask the visible zoom/settle jank while a
@@ -152,6 +164,10 @@ final class FaceWindow: NSObject {
 
     private func positionAtTop(restoringSavedX: Bool) {
         guard let screen = resolveScreen() else { return }
+        positionAtTop(restoringSavedX: restoringSavedX, on: screen)
+    }
+
+    private func positionAtTop(restoringSavedX: Bool, on screen: NSScreen) {
         let savedX = restoringSavedX ? UserDefaults.standard.object(forKey: Self.positionKey) as? CGFloat : nil
         if restoringSavedX, let savedModeRaw = UserDefaults.standard.string(forKey: Self.dockModeKey),
            let savedMode = DockMode(rawValue: savedModeRaw) {
@@ -210,7 +226,7 @@ final class FaceWindow: NSObject {
 
         let notchBottomY = left.minY
         let belowNotchX = min(max(left.maxX, screenFrame.minX), screenFrame.maxX - notchWidth)
-        return (.belowNotch, belowNotchX, notchBottomY - currentSize.height, notchWidth)
+        return (.belowNotch, belowNotchX, notchBottomY - currentSize.height + notchOverlap, notchWidth)
     }
 
     /// Clamp an x origin so the window sits at the very top of the screen while
