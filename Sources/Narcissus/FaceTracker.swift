@@ -19,6 +19,16 @@ final class FaceTracker {
     private let detectionInterval: CFAbsoluteTime = 1.0 / 10.0 // throttle Vision to 10fps
     private var isDetecting = false
 
+    // MARK: - Settle detection
+    //
+    // Exponential smoothing never mathematically reaches its target, only
+    // approaches it — so "settled" is defined as several consecutive detections
+    // landing within a tiny delta of the previous smoothed rect.
+    private var settleCompletion: (() -> Void)?
+    private var settleConsecutiveCount = 0
+    private let settleThreshold: CGFloat = 0.004
+    private let settleRequiredConsecutive = 3
+
     private let sequenceHandler = VNSequenceRequestHandler()
 
     private let facePadding: CGFloat = 0.22
@@ -32,6 +42,14 @@ final class FaceTracker {
     /// Falls back to a centered square if no face has ever been detected.
     var currentCropRect: CGRect {
         smoothedRect ?? FaceTracker.centeredSquare(padding: 0.15)
+    }
+
+    /// Arms a one-shot watcher: `completion` fires (on the main queue) once the
+    /// smoothed crop rect has converged — i.e. stopped visibly moving — after a
+    /// target jump (mode switch, camera switch, first detection, etc.).
+    func awaitSettle(completion: @escaping () -> Void) {
+        settleConsecutiveCount = 0
+        settleCompletion = completion
     }
 
     func process(pixelBuffer: CVPixelBuffer) {
@@ -66,13 +84,38 @@ final class FaceTracker {
     private func updateSmoothedRect(with newRect: CGRect) {
         guard let previous = smoothedRect else {
             smoothedRect = newRect
+            checkSettled(delta: 0)
             return
         }
         let x = previous.origin.x + (newRect.origin.x - previous.origin.x) * smoothingFactor
         let y = previous.origin.y + (newRect.origin.y - previous.origin.y) * smoothingFactor
         let width = previous.size.width + (newRect.size.width - previous.size.width) * smoothingFactor
         let height = previous.size.height + (newRect.size.height - previous.size.height) * smoothingFactor
-        smoothedRect = CGRect(x: x, y: y, width: width, height: height)
+        let updated = CGRect(x: x, y: y, width: width, height: height)
+
+        let delta = max(
+            abs(updated.origin.x - previous.origin.x),
+            abs(updated.origin.y - previous.origin.y),
+            abs(updated.width - previous.width),
+            abs(updated.height - previous.height)
+        )
+        smoothedRect = updated
+        checkSettled(delta: delta)
+    }
+
+    private func checkSettled(delta: CGFloat) {
+        guard settleCompletion != nil else { return }
+        if delta < settleThreshold {
+            settleConsecutiveCount += 1
+        } else {
+            settleConsecutiveCount = 0
+        }
+        guard settleConsecutiveCount >= settleRequiredConsecutive else { return }
+        let completion = settleCompletion
+        settleCompletion = nil
+        DispatchQueue.main.async {
+            completion?()
+        }
     }
 
     /// Expands a face bounding box into a square with padding, clamped to 0...1.

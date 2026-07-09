@@ -28,6 +28,8 @@ final class FaceView: NSView, CameraFrameReceiver {
     private var currentCropMode: CropMode = .face
     private var isTransparent = false
     private var trackingArea: NSTrackingArea?
+    private var veilSafetyTimer: Timer?
+    private var isVeiled = false
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
@@ -69,43 +71,51 @@ final class FaceView: NSView, CameraFrameReceiver {
 
     // MARK: - Transition veil
 
-    /// Briefly frosts over the feed to mask the visible zoom/settle jank while a
-    /// crop mode or camera switch takes effect: fade in, a gentle "breathe" dip so
-    /// it never reads as frozen while the crop settles (~1s), then fade out.
-    /// Deliberately just a generously-timed fixed animation rather than something
-    /// wired to Vision's internal "detection settled" state — keeps this cosmetic
-    /// mask simple and decoupled from the tracking pipeline.
+    /// Frosts over the feed to mask the visible zoom/settle jank while a crop mode
+    /// or camera switch takes effect: fade in immediately, pulse gently for as long
+    /// as face tracking is still converging, then fade out the instant it actually
+    /// settles (via `FaceTracker.awaitSettle`) — so the veil's duration always
+    /// matches the real settle time instead of a guessed fixed delay. A safety
+    /// timeout guards against Vision never quite converging (e.g. face out of frame).
     func flashTransitionVeil() {
+        isVeiled = true
+        veilSafetyTimer?.invalidate()
+
         NSAnimationContext.runAnimationGroup({ context in
             context.duration = 0.12
             context.timingFunction = CAMediaTimingFunction(name: .easeOut)
             veilView.animator().alphaValue = 1
         }, completionHandler: { [weak self] in
-            self?.breatheVeilDown()
+            self?.startVeilPulse()
         })
+
+        faceTracker.awaitSettle { [weak self] in
+            self?.resolveVeil()
+        }
+        veilSafetyTimer = Timer.scheduledTimer(withTimeInterval: 2.5, repeats: false) { [weak self] _ in
+            self?.resolveVeil()
+        }
     }
 
-    private func breatheVeilDown() {
-        NSAnimationContext.runAnimationGroup({ context in
-            context.duration = 0.35
-            context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
-            veilView.animator().alphaValue = 0.82
-        }, completionHandler: { [weak self] in
-            self?.breatheVeilUp()
-        })
+    private func startVeilPulse() {
+        guard isVeiled else { return }
+        let pulse = CABasicAnimation(keyPath: "opacity")
+        pulse.fromValue = 1.0
+        pulse.toValue = 0.78
+        pulse.duration = 0.6
+        pulse.autoreverses = true
+        pulse.repeatCount = .infinity
+        pulse.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+        veilView.layer?.add(pulse, forKey: "veilPulse")
     }
 
-    private func breatheVeilUp() {
-        NSAnimationContext.runAnimationGroup({ context in
-            context.duration = 0.35
-            context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
-            veilView.animator().alphaValue = 1
-        }, completionHandler: { [weak self] in
-            self?.fadeVeilOut()
-        })
-    }
+    private func resolveVeil() {
+        guard isVeiled else { return }
+        isVeiled = false
+        veilSafetyTimer?.invalidate()
+        veilSafetyTimer = nil
+        veilView.layer?.removeAnimation(forKey: "veilPulse")
 
-    private func fadeVeilOut() {
         NSAnimationContext.runAnimationGroup { context in
             context.duration = 0.4
             context.timingFunction = CAMediaTimingFunction(name: .easeIn)
