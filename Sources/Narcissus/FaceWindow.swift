@@ -25,14 +25,17 @@ final class FaceWindow: NSObject {
     private var targetX: CGFloat = 0
     private var currentX: CGFloat = 0
     private var currentY: CGFloat = 0
+    private var currentWidth: CGFloat = FaceWindow.faceSize.width
     private var dockMode: DockMode = .topEdge
 
     // Settle-spring state (the organic bounce/ooze once the drag ends).
     private var settleTicker: Timer?
     private var settleVelocityX: CGFloat = 0
     private var settleVelocityY: CGFloat = 0
+    private var settleVelocityWidth: CGFloat = 0
     private var settleTargetX: CGFloat = 0
     private var settleTargetY: CGFloat = 0
+    private var settleTargetWidth: CGFloat = 0
 
     private let tickInterval: TimeInterval = 1.0 / 60.0
     private let dragFollowFactor: CGFloat = 0.35
@@ -108,9 +111,17 @@ final class FaceWindow: NSObject {
         positionAtTop(restoringSavedX: false)
     }
 
+    /// Briefly frosts over the Mirror to mask the visible zoom/settle jank while a
+    /// crop mode or camera switch takes effect.
+    func showTransitionVeil() {
+        faceView.flashTransitionVeil()
+    }
+
     // MARK: - Crop mode / transparency
 
     private func applyCropMode(_ mode: CropMode) {
+        faceView.flashTransitionVeil()
+
         let targetSize = mode == .face ? FaceWindow.faceSize : FaceWindow.eyesSize
         guard targetSize != currentSize else { return }
         currentSize = targetSize
@@ -119,14 +130,14 @@ final class FaceWindow: NSObject {
         let resolved = resolveDock(for: currentX, on: screen, previousMode: dockMode)
         dockMode = resolved.mode
 
-        panel.setContentSize(currentSize)
         NSAnimationContext.runAnimationGroup { context in
             context.duration = 0.32
             context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
-            panel.animator().setFrame(NSRect(x: resolved.x, y: resolved.y, width: currentSize.width, height: currentSize.height), display: true)
+            panel.animator().setFrame(NSRect(x: resolved.x, y: resolved.y, width: resolved.width, height: currentSize.height), display: true)
         }
         currentX = resolved.x
         currentY = resolved.y
+        currentWidth = resolved.width
         targetX = resolved.x
     }
 
@@ -151,12 +162,18 @@ final class FaceWindow: NSObject {
         dockMode = resolved.mode
         currentX = resolved.x
         currentY = resolved.y
+        currentWidth = resolved.width
         targetX = resolved.x
-        panel.setFrame(NSRect(x: resolved.x, y: resolved.y, width: currentSize.width, height: currentSize.height), display: true)
+        panel.setFrame(NSRect(x: resolved.x, y: resolved.y, width: resolved.width, height: currentSize.height), display: true)
     }
 
+    /// The screen the panel is actually docked on always wins for in-place
+    /// operations (repositioning, mode toggles, drag/settle) — a mode toggle must
+    /// never silently re-target onto DeviceCoordinator's "preferred" external
+    /// display out from under a deliberate notch dock. `preferredScreen` is only
+    /// authoritative via the explicit `setPreferredScreen(_:)` re-dock call.
     private func resolveScreen() -> NSScreen? {
-        preferredScreen ?? panel.screen ?? NSScreen.main
+        panel.screen ?? preferredScreen ?? NSScreen.main
     }
 
     // MARK: - Dock resolution
@@ -164,11 +181,14 @@ final class FaceWindow: NSObject {
     /// Decides whether the window should hug the plain top edge (sliding around the
     /// notch) or tuck directly beneath the notch, based on how close the proposed
     /// x is to the notch's horizontal span. Applies hysteresis so it doesn't
-    /// flicker between modes right at the boundary.
-    private func resolveDock(for x: CGFloat, on screen: NSScreen, previousMode: DockMode) -> (mode: DockMode, x: CGFloat, y: CGFloat) {
+    /// flicker between modes right at the boundary. When docking below the notch,
+    /// the width matches the notch's actual physical width for this Mac (reported
+    /// by macOS via auxiliaryTopLeftArea/auxiliaryTopRightArea) instead of the
+    /// Mirror's normal size, so it reads as a native fit regardless of hardware.
+    private func resolveDock(for x: CGFloat, on screen: NSScreen, previousMode: DockMode) -> (mode: DockMode, x: CGFloat, y: CGFloat, width: CGFloat) {
         let screenFrame = screen.frame
         let clampedTopEdgeX = clampedTopEdgeX(x, on: screen)
-        let topEdgeResult: (DockMode, CGFloat, CGFloat) = (.topEdge, clampedTopEdgeX, screenFrame.maxY - currentSize.height)
+        let topEdgeResult: (DockMode, CGFloat, CGFloat, CGFloat) = (.topEdge, clampedTopEdgeX, screenFrame.maxY - currentSize.height, currentSize.width)
 
         guard #available(macOS 12.0, *),
               let left = screen.auxiliaryTopLeftArea,
@@ -177,7 +197,8 @@ final class FaceWindow: NSObject {
         }
 
         let notchCenterX = (left.maxX + right.minX) / 2
-        let notchHalfWidth = (right.minX - left.maxX) / 2
+        let notchWidth = right.minX - left.maxX
+        let notchHalfWidth = notchWidth / 2
         let captureMargin: CGFloat = 40
         let hysteresisBonus: CGFloat = 24
         let halfWidth = notchHalfWidth + captureMargin + (previousMode == .belowNotch ? hysteresisBonus : 0)
@@ -188,9 +209,8 @@ final class FaceWindow: NSObject {
         }
 
         let notchBottomY = left.minY
-        var belowNotchX = notchCenterX - currentSize.width / 2
-        belowNotchX = min(max(belowNotchX, screenFrame.minX), screenFrame.maxX - currentSize.width)
-        return (.belowNotch, belowNotchX, notchBottomY - currentSize.height)
+        let belowNotchX = min(max(left.maxX, screenFrame.minX), screenFrame.maxX - notchWidth)
+        return (.belowNotch, belowNotchX, notchBottomY - currentSize.height, notchWidth)
     }
 
     /// Clamp an x origin so the window sits at the very top of the screen while
@@ -238,10 +258,12 @@ final class FaceWindow: NSObject {
         // bounds. We deliberately don't fight the cursor to avoid the notch here;
         // staying flush against the top (below) means the window just visually
         // disappears "behind" the notch cutout as it passes underneath. Which dock
-        // (top-edge vs below-notch) it resolves to is only decided once, on release.
+        // (top-edge vs below-notch, and its matching width) is only decided once,
+        // on release, and the width settles in via the spring below.
         currentX = min(max(currentX, screenFrame.minX), screenFrame.maxX - currentSize.width)
         currentY = screenFrame.maxY - currentSize.height
-        panel.setFrameOrigin(NSPoint(x: currentX, y: currentY))
+        currentWidth = currentSize.width
+        panel.setFrame(NSRect(x: currentX, y: currentY, width: currentWidth, height: currentSize.height), display: true)
     }
 
     private func endDrag() {
@@ -251,7 +273,7 @@ final class FaceWindow: NSObject {
         guard let screen = screenUnderMouse() ?? resolveScreen() else { return }
         let resolved = resolveDock(for: currentX, on: screen, previousMode: dockMode)
         dockMode = resolved.mode
-        beginSettle(toX: resolved.x, toY: resolved.y)
+        beginSettle(toX: resolved.x, toY: resolved.y, toWidth: resolved.width)
 
         UserDefaults.standard.set(resolved.x, forKey: Self.positionKey)
         UserDefaults.standard.set(dockMode.rawValue, forKey: Self.dockModeKey)
@@ -266,11 +288,13 @@ final class FaceWindow: NSObject {
 
     // MARK: - Settle (organic spring bounce / ooze once the drag ends)
 
-    private func beginSettle(toX targetX: CGFloat, toY targetY: CGFloat) {
+    private func beginSettle(toX targetX: CGFloat, toY targetY: CGFloat, toWidth targetWidth: CGFloat) {
         settleTargetX = targetX
         settleTargetY = targetY
+        settleTargetWidth = targetWidth
         settleVelocityX = 0
         settleVelocityY = 0
+        settleVelocityWidth = 0
 
         settleTicker?.invalidate()
         settleTicker = Timer.scheduledTimer(withTimeInterval: tickInterval, repeats: true) { [weak self] timer in
@@ -293,14 +317,21 @@ final class FaceWindow: NSObject {
         settleVelocityY += forceY * tickInterval
         currentY += settleVelocityY * tickInterval
 
-        panel.setFrameOrigin(NSPoint(x: currentX, y: currentY))
+        let displacementWidth = currentWidth - settleTargetWidth
+        let forceWidth = -springStiffness * displacementWidth - springDamping * settleVelocityWidth
+        settleVelocityWidth += forceWidth * tickInterval
+        currentWidth += settleVelocityWidth * tickInterval
+
+        panel.setFrame(NSRect(x: currentX, y: currentY, width: currentWidth, height: currentSize.height), display: true)
 
         let settled = abs(displacementX) < 0.5 && abs(settleVelocityX) < 0.5
             && abs(displacementY) < 0.5 && abs(settleVelocityY) < 0.5
+            && abs(displacementWidth) < 0.5 && abs(settleVelocityWidth) < 0.5
         if settled {
             currentX = settleTargetX
             currentY = settleTargetY
-            panel.setFrameOrigin(NSPoint(x: currentX, y: currentY))
+            currentWidth = settleTargetWidth
+            panel.setFrame(NSRect(x: currentX, y: currentY, width: currentWidth, height: currentSize.height), display: true)
             timer.invalidate()
             settleTicker = nil
         }

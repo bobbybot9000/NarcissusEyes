@@ -9,6 +9,7 @@ final class FaceView: NSView, CameraFrameReceiver {
     private let shapeMask = CAShapeLayer()
     private let bottomCornerRadius: CGFloat = 28
     private let dockView = MirrorDockView(frame: NSRect(x: 0, y: 0, width: 84, height: 22))
+    private let veilView = NSVisualEffectView()
 
     /// Called when a drag begins (mouse down), before any movement.
     var onDragStart: (() -> Void)?
@@ -38,6 +39,13 @@ final class FaceView: NSView, CameraFrameReceiver {
         displayLayer.contentsGravity = .resizeAspectFill
         layer?.addSublayer(displayLayer)
 
+        veilView.frame = bounds
+        veilView.material = .hudWindow
+        veilView.blendingMode = .withinWindow
+        veilView.state = .active
+        veilView.alphaValue = 0
+        addSubview(veilView)
+
         addSubview(dockView)
         dockView.onFaceTapped = { [weak self] in self?.setCropMode(.face) }
         dockView.onEyesTapped = { [weak self] in self?.setCropMode(.eyes) }
@@ -54,8 +62,30 @@ final class FaceView: NSView, CameraFrameReceiver {
     override func layout() {
         super.layout()
         displayLayer.frame = bounds
+        veilView.frame = bounds
         updateShapeMask()
         layoutDockView()
+    }
+
+    // MARK: - Transition veil
+
+    /// Briefly frosts over the feed to mask the visible zoom/settle jank while a
+    /// crop mode or camera switch takes effect: fade in quickly, hold, fade out.
+    func flashTransitionVeil() {
+        NSAnimationContext.runAnimationGroup({ context in
+            context.duration = 0.12
+            context.timingFunction = CAMediaTimingFunction(name: .easeOut)
+            veilView.animator().alphaValue = 1
+        }, completionHandler: { [weak self] in
+            guard let self else { return }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                NSAnimationContext.runAnimationGroup { context in
+                    context.duration = 0.35
+                    context.timingFunction = CAMediaTimingFunction(name: .easeIn)
+                    self.veilView.animator().alphaValue = 0
+                }
+            }
+        })
     }
 
     private func layoutDockView() {
