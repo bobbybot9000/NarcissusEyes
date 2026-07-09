@@ -6,12 +6,19 @@ final class FaceWindow: NSObject {
         case belowNotch
     }
 
+    private static let faceSize = NSSize(width: 140, height: 140)
+    private static let eyesSize = NSSize(width: 200, height: 40)
+    private static let normalAlpha: CGFloat = 1.0
+    private static let transparentAlpha: CGFloat = 0.35
+
     private let panel: NSPanel
     private let faceView: FaceView
-    private let size: CGFloat = 140
 
     private static let positionKey = "narcissus.windowOriginX"
     private static let dockModeKey = "narcissus.dockMode"
+
+    private var currentSize = FaceWindow.faceSize
+    private var preferredScreen: NSScreen?
 
     // Drag-follow state (the "sticky" lag while actively dragging).
     private var dragTicker: Timer?
@@ -33,10 +40,10 @@ final class FaceWindow: NSObject {
     private let springDamping: CGFloat = 24
 
     init(cameraController: CameraController) {
-        faceView = FaceView(frame: NSRect(x: 0, y: 0, width: size, height: size))
+        faceView = FaceView(frame: NSRect(origin: .zero, size: FaceWindow.faceSize))
 
         panel = NSPanel(
-            contentRect: NSRect(x: 0, y: 0, width: size, height: size),
+            contentRect: NSRect(origin: .zero, size: FaceWindow.faceSize),
             styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered,
             defer: false
@@ -64,6 +71,12 @@ final class FaceWindow: NSObject {
         faceView.onDragEnd = { [weak self] in
             self?.endDrag()
         }
+        faceView.onCropModeChange = { [weak self] mode in
+            self?.applyCropMode(mode)
+        }
+        faceView.onTransparencyChange = { [weak self] transparent in
+            self?.applyTransparency(transparent)
+        }
 
         positionAtTop(restoringSavedX: true)
     }
@@ -87,22 +100,63 @@ final class FaceWindow: NSObject {
         positionAtTop(restoringSavedX: false)
     }
 
+    /// Called by DeviceCoordinator when the preferred screen (built-in vs external
+    /// display) changes. Re-docks the Mirror onto the new screen.
+    func setPreferredScreen(_ screen: NSScreen) {
+        preferredScreen = screen
+        dockMode = .topEdge
+        positionAtTop(restoringSavedX: false)
+    }
+
+    // MARK: - Crop mode / transparency
+
+    private func applyCropMode(_ mode: CropMode) {
+        let targetSize = mode == .face ? FaceWindow.faceSize : FaceWindow.eyesSize
+        guard targetSize != currentSize else { return }
+        currentSize = targetSize
+
+        guard let screen = resolveScreen() else { return }
+        let resolved = resolveDock(for: currentX, on: screen, previousMode: dockMode)
+        dockMode = resolved.mode
+
+        panel.setContentSize(currentSize)
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.32
+            context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            panel.animator().setFrame(NSRect(x: resolved.x, y: resolved.y, width: currentSize.width, height: currentSize.height), display: true)
+        }
+        currentX = resolved.x
+        currentY = resolved.y
+        targetX = resolved.x
+    }
+
+    private func applyTransparency(_ transparent: Bool) {
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.25
+            panel.animator().alphaValue = transparent ? FaceWindow.transparentAlpha : FaceWindow.normalAlpha
+        }
+    }
+
     // MARK: - Initial / restored positioning
 
     private func positionAtTop(restoringSavedX: Bool) {
-        guard let screen = panel.screen ?? NSScreen.main else { return }
+        guard let screen = resolveScreen() else { return }
         let savedX = restoringSavedX ? UserDefaults.standard.object(forKey: Self.positionKey) as? CGFloat : nil
         if restoringSavedX, let savedModeRaw = UserDefaults.standard.string(forKey: Self.dockModeKey),
            let savedMode = DockMode(rawValue: savedModeRaw) {
             dockMode = savedMode
         }
-        let defaultX = screen.frame.midX - size / 2
+        let defaultX = screen.frame.midX - currentSize.width / 2
         let resolved = resolveDock(for: savedX ?? defaultX, on: screen, previousMode: dockMode)
         dockMode = resolved.mode
         currentX = resolved.x
         currentY = resolved.y
         targetX = resolved.x
-        panel.setFrameOrigin(NSPoint(x: resolved.x, y: resolved.y))
+        panel.setFrame(NSRect(x: resolved.x, y: resolved.y, width: currentSize.width, height: currentSize.height), display: true)
+    }
+
+    private func resolveScreen() -> NSScreen? {
+        preferredScreen ?? panel.screen ?? NSScreen.main
     }
 
     // MARK: - Dock resolution
@@ -114,7 +168,7 @@ final class FaceWindow: NSObject {
     private func resolveDock(for x: CGFloat, on screen: NSScreen, previousMode: DockMode) -> (mode: DockMode, x: CGFloat, y: CGFloat) {
         let screenFrame = screen.frame
         let clampedTopEdgeX = clampedTopEdgeX(x, on: screen)
-        let topEdgeResult: (DockMode, CGFloat, CGFloat) = (.topEdge, clampedTopEdgeX, screenFrame.maxY - size)
+        let topEdgeResult: (DockMode, CGFloat, CGFloat) = (.topEdge, clampedTopEdgeX, screenFrame.maxY - currentSize.height)
 
         guard #available(macOS 12.0, *),
               let left = screen.auxiliaryTopLeftArea,
@@ -128,32 +182,32 @@ final class FaceWindow: NSObject {
         let hysteresisBonus: CGFloat = 24
         let halfWidth = notchHalfWidth + captureMargin + (previousMode == .belowNotch ? hysteresisBonus : 0)
 
-        let proposedCenterX = x + size / 2
+        let proposedCenterX = x + currentSize.width / 2
         guard abs(proposedCenterX - notchCenterX) <= halfWidth else {
             return topEdgeResult
         }
 
         let notchBottomY = left.minY
-        var belowNotchX = notchCenterX - size / 2
-        belowNotchX = min(max(belowNotchX, screenFrame.minX), screenFrame.maxX - size)
-        return (.belowNotch, belowNotchX, notchBottomY - size)
+        var belowNotchX = notchCenterX - currentSize.width / 2
+        belowNotchX = min(max(belowNotchX, screenFrame.minX), screenFrame.maxX - currentSize.width)
+        return (.belowNotch, belowNotchX, notchBottomY - currentSize.height)
     }
 
     /// Clamp an x origin so the window sits at the very top of the screen while
     /// sliding left/right around any notch/camera-housing area.
     private func clampedTopEdgeX(_ x: CGFloat, on screen: NSScreen) -> CGFloat {
         let screenFrame = screen.frame
-        var proposed = min(max(x, screenFrame.minX), screenFrame.maxX - size)
+        var proposed = min(max(x, screenFrame.minX), screenFrame.maxX - currentSize.width)
 
         if #available(macOS 12.0, *) {
-            let windowRect = NSRect(x: proposed, y: screenFrame.maxY - size, width: size, height: size)
+            let windowRect = NSRect(x: proposed, y: screenFrame.maxY - currentSize.height, width: currentSize.width, height: currentSize.height)
             if let left = screen.auxiliaryTopLeftArea, let right = screen.auxiliaryTopRightArea {
                 let notchGap = NSRect(x: left.maxX, y: left.minY, width: right.minX - left.maxX, height: left.height)
                 if windowRect.intersects(notchGap) {
                     let distanceToLeft = abs(windowRect.minX - notchGap.minX)
                     let distanceToRight = abs(notchGap.maxX - windowRect.maxX)
-                    proposed = distanceToLeft <= distanceToRight ? (notchGap.minX - size) : notchGap.maxX
-                    proposed = min(max(proposed, screenFrame.minX), screenFrame.maxX - size)
+                    proposed = distanceToLeft <= distanceToRight ? (notchGap.minX - currentSize.width) : notchGap.maxX
+                    proposed = min(max(proposed, screenFrame.minX), screenFrame.maxX - currentSize.width)
                 }
             }
         }
@@ -177,7 +231,7 @@ final class FaceWindow: NSObject {
     }
 
     private func stepDrag() {
-        guard let screen = screenUnderMouse() ?? panel.screen ?? NSScreen.main else { return }
+        guard let screen = screenUnderMouse() ?? resolveScreen() else { return }
         let screenFrame = screen.frame
         currentX += (targetX - currentX) * dragFollowFactor
         // Follow the mouse freely during the drag itself — only clamp to the screen
@@ -185,8 +239,8 @@ final class FaceWindow: NSObject {
         // staying flush against the top (below) means the window just visually
         // disappears "behind" the notch cutout as it passes underneath. Which dock
         // (top-edge vs below-notch) it resolves to is only decided once, on release.
-        currentX = min(max(currentX, screenFrame.minX), screenFrame.maxX - size)
-        currentY = screenFrame.maxY - size
+        currentX = min(max(currentX, screenFrame.minX), screenFrame.maxX - currentSize.width)
+        currentY = screenFrame.maxY - currentSize.height
         panel.setFrameOrigin(NSPoint(x: currentX, y: currentY))
     }
 
@@ -194,7 +248,7 @@ final class FaceWindow: NSObject {
         dragTicker?.invalidate()
         dragTicker = nil
 
-        guard let screen = screenUnderMouse() ?? panel.screen ?? NSScreen.main else { return }
+        guard let screen = screenUnderMouse() ?? resolveScreen() else { return }
         let resolved = resolveDock(for: currentX, on: screen, previousMode: dockMode)
         dockMode = resolved.mode
         beginSettle(toX: resolved.x, toY: resolved.y)

@@ -8,6 +8,7 @@ final class FaceView: NSView, CameraFrameReceiver {
     private let displayLayer = CALayer()
     private let shapeMask = CAShapeLayer()
     private let bottomCornerRadius: CGFloat = 28
+    private let dockView = MirrorDockView(frame: NSRect(x: 0, y: 0, width: 84, height: 22))
 
     /// Called when a drag begins (mouse down), before any movement.
     var onDragStart: (() -> Void)?
@@ -16,9 +17,16 @@ final class FaceView: NSView, CameraFrameReceiver {
     var onDragMove: ((CGFloat) -> Void)?
     /// Called once the drag ends (mouse up), so the owner can persist the final position.
     var onDragEnd: (() -> Void)?
+    /// Called when the Face/Eyes crop toggle changes.
+    var onCropModeChange: ((CropMode) -> Void)?
+    /// Called when the Transparent toggle changes.
+    var onTransparencyChange: ((Bool) -> Void)?
 
     private var dragOriginWindowX: CGFloat = 0
     private var dragOriginMouseScreenX: CGFloat = 0
+    private var currentCropMode: CropMode = .face
+    private var isTransparent = false
+    private var trackingArea: NSTrackingArea?
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
@@ -30,7 +38,13 @@ final class FaceView: NSView, CameraFrameReceiver {
         displayLayer.contentsGravity = .resizeAspectFill
         layer?.addSublayer(displayLayer)
 
+        addSubview(dockView)
+        dockView.onFaceTapped = { [weak self] in self?.setCropMode(.face) }
+        dockView.onEyesTapped = { [weak self] in self?.setCropMode(.eyes) }
+        dockView.onTransparentTapped = { [weak self] in self?.toggleTransparency() }
+
         updateShapeMask()
+        layoutDockView()
     }
 
     required init?(coder: NSCoder) {
@@ -41,6 +55,51 @@ final class FaceView: NSView, CameraFrameReceiver {
         super.layout()
         displayLayer.frame = bounds
         updateShapeMask()
+        layoutDockView()
+    }
+
+    private func layoutDockView() {
+        let size = dockView.frame.size
+        dockView.frame = NSRect(
+            x: (bounds.width - size.width) / 2,
+            y: 6,
+            width: size.width,
+            height: size.height
+        )
+    }
+
+    // MARK: - Hover reveal
+
+    override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        if let trackingArea {
+            removeTrackingArea(trackingArea)
+        }
+        let area = NSTrackingArea(rect: bounds, options: [.mouseEnteredAndExited, .activeAlways], owner: self, userInfo: nil)
+        addTrackingArea(area)
+        trackingArea = area
+    }
+
+    override func mouseEntered(with event: NSEvent) {
+        dockView.animator().alphaValue = 1
+    }
+
+    override func mouseExited(with event: NSEvent) {
+        dockView.animator().alphaValue = 0
+    }
+
+    // MARK: - Mirror controls
+
+    private func setCropMode(_ mode: CropMode) {
+        guard mode != currentCropMode else { return }
+        currentCropMode = mode
+        faceTracker.mode = mode
+        onCropModeChange?(mode)
+    }
+
+    private func toggleTransparency() {
+        isTransparent.toggle()
+        onTransparencyChange?(isTransparent)
     }
 
     /// Square top corners, rounded bottom corners — reads as flush-mounted against

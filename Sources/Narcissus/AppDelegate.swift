@@ -4,10 +4,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
     private var faceWindow: FaceWindow!
     private var cameraController: CameraController!
+    private var deviceCoordinator: DeviceCoordinator!
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        deviceCoordinator = DeviceCoordinator()
         cameraController = CameraController()
         faceWindow = FaceWindow(cameraController: cameraController)
+
+        deviceCoordinator.onCameraChange = { [weak self] device in
+            self?.cameraController.reconfigure(device: device)
+        }
+        deviceCoordinator.onScreenChange = { [weak self] screen in
+            self?.faceWindow.setPreferredScreen(screen)
+        }
+        deviceCoordinator.resolveInitial()
 
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         if let button = statusItem.button {

@@ -2,9 +2,17 @@ import Vision
 import CoreImage
 import CoreGraphics
 
-/// Detects a face in each sample buffer (throttled) and produces a smoothed,
-/// square normalized crop rect (Vision coordinate space: origin bottom-left, 0...1).
+enum CropMode: Equatable {
+    case face
+    case eyes
+}
+
+/// Detects a face in each sample buffer (throttled) and produces a smoothed
+/// normalized crop rect (Vision coordinate space: origin bottom-left, 0...1),
+/// shaped according to the current `mode`.
 final class FaceTracker {
+    var mode: CropMode = .face
+
     private var smoothedRect: CGRect?
     private let smoothingFactor: CGFloat = 0.25
     private var lastDetectionTime: CFAbsoluteTime = 0
@@ -13,7 +21,14 @@ final class FaceTracker {
 
     private let sequenceHandler = VNSequenceRequestHandler()
 
-    /// Returns the current best-known square crop rect (normalized, Vision coords).
+    private let facePadding: CGFloat = 0.22
+    private let eyeBandHorizontalPadding: CGFloat = 0.15
+    private let eyeBandVerticalPadding: CGFloat = 0.15
+    // Fallback (no landmarks available) proportional band, same as the original heuristic.
+    private let eyeFallbackTopFraction: CGFloat = 0.25
+    private let eyeFallbackBottomFraction: CGFloat = 0.55
+
+    /// Returns the current best-known crop rect (normalized, Vision coords).
     /// Falls back to a centered square if no face has ever been detected.
     var currentCropRect: CGRect {
         smoothedRect ?? FaceTracker.centeredSquare(padding: 0.15)
@@ -25,20 +40,29 @@ final class FaceTracker {
         isDetecting = true
         lastDetectionTime = now
 
-        let request = VNDetectFaceRectanglesRequest { [weak self] request, _ in
+        let request = VNDetectFaceLandmarksRequest { [weak self] request, _ in
             defer { self?.isDetecting = false }
             guard let self else { return }
             guard let results = request.results as? [VNFaceObservation], let face = results.first else {
                 return
             }
-            let square = FaceTracker.squareify(face.boundingBox, padding: 0.6)
-            self.updateSmoothedRect(with: square)
+            let target: CGRect
+            switch self.mode {
+            case .face:
+                target = FaceTracker.squareify(face.boundingBox, padding: self.facePadding)
+            case .eyes:
+                target = self.eyebrowToEyeBand(for: face) ?? self.eyeBandFallback(from: face.boundingBox)
+            }
+            self.updateSmoothedRect(with: target)
         }
-        request.revision = VNDetectFaceRectanglesRequestRevision3
+        request.revision = VNDetectFaceLandmarksRequestRevision3
 
         try? sequenceHandler.perform([request], on: pixelBuffer, orientation: .up)
     }
 
+    /// Smooths toward the new target rect on all four dimensions independently, so a
+    /// mode switch (square face crop <-> thin eye band) eases into its new shape
+    /// rather than snapping.
     private func updateSmoothedRect(with newRect: CGRect) {
         guard let previous = smoothedRect else {
             smoothedRect = newRect
@@ -46,8 +70,9 @@ final class FaceTracker {
         }
         let x = previous.origin.x + (newRect.origin.x - previous.origin.x) * smoothingFactor
         let y = previous.origin.y + (newRect.origin.y - previous.origin.y) * smoothingFactor
-        let size = previous.size.width + (newRect.size.width - previous.size.width) * smoothingFactor
-        smoothedRect = CGRect(x: x, y: y, width: size, height: size)
+        let width = previous.size.width + (newRect.size.width - previous.size.width) * smoothingFactor
+        let height = previous.size.height + (newRect.size.height - previous.size.height) * smoothingFactor
+        smoothedRect = CGRect(x: x, y: y, width: width, height: height)
     }
 
     /// Expands a face bounding box into a square with padding, clamped to 0...1.
@@ -61,6 +86,80 @@ final class FaceTracker {
         rect.origin.y = min(max(rect.origin.y, 0), 1 - rect.height)
         if rect.width > 1 {
             rect = CGRect(x: 0, y: rect.origin.y, width: 1, height: 1)
+        }
+        return rect
+    }
+
+    /// Real eye-landmark crop: spans both eyebrows (top) down through the eyes with
+    /// a small margin toward the nose bridge (bottom), across both eyes horizontally.
+    /// Returns nil if Vision couldn't compute landmarks (extreme angle, etc.).
+    private func eyebrowToEyeBand(for face: VNFaceObservation) -> CGRect? {
+        guard let landmarks = face.landmarks,
+              let leftEye = landmarks.leftEye, let rightEye = landmarks.rightEye,
+              let leftBrow = landmarks.leftEyebrow, let rightBrow = landmarks.rightEyebrow else {
+            return nil
+        }
+
+        let box = face.boundingBox
+        func imagePoints(_ region: VNFaceLandmarkRegion2D) -> [CGPoint] {
+            region.normalizedPoints.map { CGPoint(x: box.minX + $0.x * box.width, y: box.minY + $0.y * box.height) }
+        }
+
+        let browPoints = imagePoints(leftBrow) + imagePoints(rightBrow)
+        let eyePoints = imagePoints(leftEye) + imagePoints(rightEye)
+        let allPoints = browPoints + eyePoints
+        guard !allPoints.isEmpty,
+              let minX = allPoints.map(\.x).min(), let maxX = allPoints.map(\.x).max(),
+              let browTopY = browPoints.map(\.y).max(), let eyeBottomY = eyePoints.map(\.y).min() else {
+            return nil
+        }
+
+        // Extend a bit below the eyes toward the nose bridge for breathing room.
+        let noseMargin = max(browTopY - eyeBottomY, 0) * 0.5
+        let top = browTopY
+        let bottom = eyeBottomY - noseMargin
+
+        let width = maxX - minX
+        let height = max(top - bottom, 0.001)
+        let horizontalPadding = width * eyeBandHorizontalPadding
+        let verticalPadding = height * eyeBandVerticalPadding
+
+        var rect = CGRect(
+            x: minX - horizontalPadding,
+            y: bottom - verticalPadding,
+            width: width + horizontalPadding * 2,
+            height: height + verticalPadding * 2
+        )
+        rect.origin.x = min(max(rect.origin.x, 0), 1 - rect.width)
+        rect.origin.y = min(max(rect.origin.y, 0), 1 - rect.height)
+        if rect.width > 1 {
+            rect = CGRect(x: 0, y: rect.origin.y, width: 1, height: rect.height)
+        }
+        if rect.height > 1 {
+            rect = CGRect(x: rect.origin.x, y: 0, width: rect.width, height: 1)
+        }
+        return rect
+    }
+
+    /// Proportional-band fallback used when Vision can't compute landmarks for a
+    /// detected face, so Eyes mode never shows an empty/garbage crop.
+    private func eyeBandFallback(from box: CGRect) -> CGRect {
+        let top = box.maxY - box.height * eyeFallbackTopFraction
+        let bottom = box.maxY - box.height * eyeFallbackBottomFraction
+        let height = top - bottom
+
+        let widthPadding = box.width * eyeBandHorizontalPadding
+        var rect = CGRect(
+            x: box.minX - widthPadding,
+            y: bottom,
+            width: box.width + widthPadding * 2,
+            height: height
+        )
+
+        rect.origin.x = min(max(rect.origin.x, 0), 1 - rect.width)
+        rect.origin.y = min(max(rect.origin.y, 0), 1 - rect.height)
+        if rect.width > 1 {
+            rect = CGRect(x: 0, y: rect.origin.y, width: 1, height: rect.height)
         }
         return rect
     }
