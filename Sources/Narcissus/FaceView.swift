@@ -9,9 +9,12 @@ final class FaceView: NSView, CameraFrameReceiver {
     private let shapeMask = CAShapeLayer()
     private let bottomCornerRadius: CGFloat = 28
     private let dockView = MirrorDockView(frame: NSRect(x: 0, y: 0, width: 84, height: 22))
+    private let statusLabel = NSTextField(wrappingLabelWithString: "")
 
     /// Called when a drag begins (mouse down), before any movement.
     var onDragStart: (() -> Void)?
+    /// Called when the mouse enters (true) or exits (false) the Mirror.
+    var onHoverChange: ((Bool) -> Void)?
     /// Called on every drag update with the proposed new x origin (in screen coordinates);
     /// the owner is responsible for clamping it to the top edge / around the notch.
     var onDragMove: ((CGFloat) -> Void)?
@@ -32,10 +35,9 @@ final class FaceView: NSView, CameraFrameReceiver {
     // MARK: - Transition blur state
     //
     // Read/written from both the main queue (trigger/settle) and the camera's
-    // background output queue (per-frame radius sampling in cameraController(_:didOutput:)).
-    // All fields are plain scalars for the same reason `currentCropMode`/`faceTracker.mode`
-    // already cross threads informally elsewhere in this view — word-sized reads/writes
-    // don't tear in practice, and a lock would be overkill for a cosmetic effect.
+    // background output queue (per-frame radius sampling in cameraController(_:didOutput:)),
+    // so every access goes through `blurLock`.
+    private let blurLock = NSLock()
     private var blurActive = false
     private var blurStartTime: CFAbsoluteTime = 0
     private var blurExitTime: CFAbsoluteTime?
@@ -62,8 +64,30 @@ final class FaceView: NSView, CameraFrameReceiver {
         dockView.onEyesTapped = { [weak self] in self?.setCropMode(.eyes) }
         dockView.onTransparentTapped = { [weak self] in self?.toggleTransparency() }
 
+        statusLabel.textColor = NSColor.white.withAlphaComponent(0.85)
+        statusLabel.font = NSFont.systemFont(ofSize: 10, weight: .medium)
+        statusLabel.alignment = .center
+        statusLabel.isHidden = true
+        addSubview(statusLabel)
+
         updateShapeMask()
         layoutDockView()
+    }
+
+    /// Explains why the feed is dark instead of leaving a silent black box —
+    /// camera permission denied, or frames stopped arriving mid-run.
+    func setFeedState(_ state: CameraFeedState) {
+        switch state {
+        case .running:
+            statusLabel.isHidden = true
+        case .accessDenied:
+            statusLabel.stringValue = "Camera access needed\nSystem Settings → Privacy & Security → Camera"
+            statusLabel.isHidden = false
+        case .stalled:
+            statusLabel.stringValue = "Camera unavailable"
+            statusLabel.isHidden = false
+        }
+        needsLayout = true
     }
 
     required init?(coder: NSCoder) {
@@ -75,6 +99,14 @@ final class FaceView: NSView, CameraFrameReceiver {
         displayLayer.frame = bounds
         updateShapeMask()
         layoutDockView()
+
+        let labelSize = statusLabel.sizeThatFits(NSSize(width: bounds.width - 16, height: bounds.height))
+        statusLabel.frame = NSRect(
+            x: 8,
+            y: (bounds.height - labelSize.height) / 2,
+            width: bounds.width - 16,
+            height: labelSize.height
+        )
     }
 
     // MARK: - Transition blur
@@ -87,9 +119,11 @@ final class FaceView: NSView, CameraFrameReceiver {
     // timeout guards against Vision never quite converging (e.g. face out of frame).
 
     func beginTransitionBlur() {
+        blurLock.lock()
         blurActive = true
         blurStartTime = CFAbsoluteTimeGetCurrent()
         blurExitTime = nil
+        blurLock.unlock()
         blurSafetyTimer?.invalidate()
 
         faceTracker.awaitSettle { [weak self] in
@@ -101,17 +135,22 @@ final class FaceView: NSView, CameraFrameReceiver {
     }
 
     private func beginBlurExit() {
-        guard blurActive, blurExitTime == nil else { return }
-        blurExitStartRadius = currentBlurRadius(at: CFAbsoluteTimeGetCurrent())
+        blurLock.lock()
+        guard blurActive, blurExitTime == nil else {
+            blurLock.unlock()
+            return
+        }
+        blurExitStartRadius = lockedBlurRadius(at: CFAbsoluteTimeGetCurrent())
         blurExitTime = CFAbsoluteTimeGetCurrent()
+        blurLock.unlock()
+
         blurSafetyTimer?.invalidate()
         blurSafetyTimer = nil
     }
 
     /// The blur radius at a given time: ramping in and oscillating while active,
-    /// or ramping back down to zero once exiting. Called from the camera's
-    /// background output queue once per frame.
-    private func currentBlurRadius(at time: CFAbsoluteTime) -> CGFloat {
+    /// or ramping back down to zero once exiting. Callers must hold `blurLock`.
+    private func lockedBlurRadius(at time: CFAbsoluteTime) -> CGFloat {
         guard blurActive else { return 0 }
         if let exitTime = blurExitTime {
             let t = min((time - exitTime) / blurExitDuration, 1)
@@ -120,6 +159,19 @@ final class FaceView: NSView, CameraFrameReceiver {
         let envelope = min((time - blurStartTime) / blurEnterDuration, 1)
         let oscillation = blurBaseRadius + blurOscillationAmplitude * CGFloat(sin(2 * .pi * (time - blurStartTime) / blurOscillationPeriod))
         return oscillation * CGFloat(envelope)
+    }
+
+    /// Samples the current radius and retires the blur once its exit ramp has
+    /// finished. Called from the camera's background output queue once per frame.
+    private func sampleBlurRadius(at time: CFAbsoluteTime) -> CGFloat {
+        blurLock.lock()
+        defer { blurLock.unlock() }
+        let radius = lockedBlurRadius(at: time)
+        if let exitTime = blurExitTime, time - exitTime >= blurExitDuration {
+            blurActive = false
+            blurExitTime = nil
+        }
+        return radius
     }
 
     private func layoutDockView() {
@@ -146,10 +198,12 @@ final class FaceView: NSView, CameraFrameReceiver {
 
     override func mouseEntered(with event: NSEvent) {
         dockView.animator().alphaValue = 1
+        onHoverChange?(true)
     }
 
     override func mouseExited(with event: NSEvent) {
         dockView.animator().alphaValue = 0
+        onHoverChange?(false)
     }
 
     // MARK: - Mirror controls
@@ -227,12 +281,7 @@ final class FaceView: NSView, CameraFrameReceiver {
         ).intersection(extent)
         guard !pixelCrop.isEmpty else { return }
 
-        let now = CFAbsoluteTimeGetCurrent()
-        let radius = currentBlurRadius(at: now)
-        if let exitTime = blurExitTime, now - exitTime >= blurExitDuration {
-            blurActive = false
-            blurExitTime = nil
-        }
+        let radius = sampleBlurRadius(at: CFAbsoluteTimeGetCurrent())
 
         let outputImage: CIImage
         if radius > 0.5 {

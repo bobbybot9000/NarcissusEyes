@@ -16,10 +16,14 @@ final class FaceWindow: NSObject {
 
     private static let positionKey = "narcissus.windowOriginX"
     private static let dockModeKey = "narcissus.dockMode"
+    private static let displayIDKey = "narcissus.windowDisplayID"
 
     private var currentSize = FaceWindow.faceSize
     private var preferredScreen: NSScreen?
     private var dragStartScreen: NSScreen?
+    private var isTransparent = false
+    private var screenParamsObserver: NSObjectProtocol?
+    private var pendingRedock: DispatchWorkItem?
 
     /// Called when a drag ends having landed on a different screen than it
     /// started on, so the owner can force the camera to match (built-in cam for
@@ -90,27 +94,68 @@ final class FaceWindow: NSObject {
             self?.applyCropMode(mode)
         }
         faceView.onTransparencyChange = { [weak self] transparent in
+            self?.isTransparent = transparent
             self?.applyTransparency(transparent)
+        }
+        // While transparent, hovering temporarily restores full opacity so the
+        // dock controls are actually visible; mouse-exit returns to transparent.
+        faceView.onHoverChange = { [weak self] hovering in
+            guard let self, self.isTransparent else { return }
+            self.applyTransparency(!hovering)
         }
 
         positionAtTop(restoringSavedX: true)
+
+        // A resolution/scale/arrangement change on the *same* display never fires
+        // DeviceCoordinator's preferred-screen change, so re-dock in place here or
+        // the Mirror can be left stranded mid-screen. Debounced because display
+        // reconfiguration fires this notification several times in a burst.
+        screenParamsObserver = NotificationCenter.default.addObserver(
+            forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main
+        ) { [weak self] _ in
+            self?.scheduleRedock()
+        }
     }
+
+    deinit {
+        if let screenParamsObserver {
+            NotificationCenter.default.removeObserver(screenParamsObserver)
+        }
+        pendingRedock?.cancel()
+    }
+
+    private func scheduleRedock() {
+        pendingRedock?.cancel()
+        let work = DispatchWorkItem { [weak self] in
+            guard let self, self.dragTicker == nil else { return }
+            self.settleTicker?.invalidate()
+            self.settleTicker = nil
+            self.positionAtTop(restoringSavedX: false)
+        }
+        pendingRedock = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5, execute: work)
+    }
+
+    var isMirrorVisible: Bool { panel.isVisible }
 
     func showWindow() {
         panel.orderFrontRegardless()
     }
 
-    func toggleVisibility() {
-        if panel.isVisible {
-            panel.orderOut(nil)
-        } else {
-            panel.orderFrontRegardless()
-        }
+    func hideWindow() {
+        panel.orderOut(nil)
+    }
+
+    /// Forwards camera feed availability (denied/stalled/running) to the view so
+    /// the Mirror explains itself instead of showing a black box.
+    func setFeedState(_ state: CameraFeedState) {
+        faceView.setFeedState(state)
     }
 
     func resetPosition() {
         UserDefaults.standard.removeObject(forKey: Self.positionKey)
         UserDefaults.standard.removeObject(forKey: Self.dockModeKey)
+        UserDefaults.standard.removeObject(forKey: Self.displayIDKey)
         dockMode = .topEdge
         positionAtTop(restoringSavedX: false)
     }
@@ -138,6 +183,13 @@ final class FaceWindow: NSObject {
     // MARK: - Crop mode / transparency
 
     private func applyCropMode(_ mode: CropMode) {
+        // A running drag/settle ticker would fight the frame animation below,
+        // both writing the panel frame at 60fps.
+        dragTicker?.invalidate()
+        dragTicker = nil
+        settleTicker?.invalidate()
+        settleTicker = nil
+
         faceView.beginTransitionBlur()
 
         let targetSize = mode == .face ? FaceWindow.faceSize : FaceWindow.eyesSize
@@ -180,8 +232,16 @@ final class FaceWindow: NSObject {
     }
 
     private func positionAtTop(restoringSavedX: Bool, on screen: NSScreen) {
-        let savedX = restoringSavedX ? UserDefaults.standard.object(forKey: Self.positionKey) as? CGFloat : nil
-        if restoringSavedX, let savedModeRaw = UserDefaults.standard.string(forKey: Self.dockModeKey),
+        // Saved coordinates are only meaningful on the display they were saved
+        // for; restoring them onto a different display (changed arrangement,
+        // missing monitor) would land the Mirror somewhere arbitrary.
+        let savedDisplayID = UserDefaults.standard.object(forKey: Self.displayIDKey) as? UInt32
+        let savedXIsForThisScreen = savedDisplayID != nil && savedDisplayID == screen.narcissusDisplayID
+        let savedX = (restoringSavedX && savedXIsForThisScreen)
+            ? UserDefaults.standard.object(forKey: Self.positionKey) as? CGFloat
+            : nil
+        if restoringSavedX, savedXIsForThisScreen,
+           let savedModeRaw = UserDefaults.standard.string(forKey: Self.dockModeKey),
            let savedMode = DockMode(rawValue: savedModeRaw) {
             dockMode = savedMode
         }
@@ -323,7 +383,10 @@ final class FaceWindow: NSObject {
         // built-in display, force the notch dock outright regardless of exactly
         // where on the screen it was dropped, so the user doesn't have to
         // fine-tune the drop position for the anchor to take.
-        let landedOnNewScreen = dragStartScreen.map { $0 !== screen } ?? false
+        // Compare display IDs, not object identity — AppKit doesn't guarantee
+        // stable NSScreen instances across calls, and a false mismatch here
+        // would silently force a camera switch on an ordinary drag.
+        let landedOnNewScreen = dragStartScreen.map { $0.narcissusDisplayID != screen.narcissusDisplayID } ?? false
         if landedOnNewScreen {
             onUserRelocatedToScreen?(screen)
         }
@@ -339,6 +402,9 @@ final class FaceWindow: NSObject {
 
         UserDefaults.standard.set(resolved.x, forKey: Self.positionKey)
         UserDefaults.standard.set(dockMode.rawValue, forKey: Self.dockModeKey)
+        if let displayID = screen.narcissusDisplayID {
+            UserDefaults.standard.set(displayID, forKey: Self.displayIDKey)
+        }
     }
 
     /// While dragging near a screen edge, panel.screen can lag; find the screen

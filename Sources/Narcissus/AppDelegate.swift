@@ -1,10 +1,11 @@
 import AppKit
 
-final class AppDelegate: NSObject, NSApplicationDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var statusItem: NSStatusItem!
     private var faceWindow: FaceWindow!
     private var cameraController: CameraController!
     private var deviceCoordinator: DeviceCoordinator!
+    private var toggleItem: NSMenuItem!
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         deviceCoordinator = DeviceCoordinator()
@@ -21,6 +22,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         faceWindow.onUserRelocatedToScreen = { [weak self] screen in
             self?.deviceCoordinator.userRelocated(to: screen)
         }
+        cameraController.onFeedStateChange = { [weak self] state in
+            self?.faceWindow.setFeedState(state)
+        }
         deviceCoordinator.resolveInitial()
 
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
@@ -34,12 +38,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
-        cameraController.stop()
+        // Synchronous so the camera indicator light never outlives the app.
+        cameraController.stopSync()
     }
 
     private func buildMenu() -> NSMenu {
         let menu = NSMenu()
-        let toggleItem = NSMenuItem(title: "Show/Hide", action: #selector(toggleWindow), keyEquivalent: "")
+        menu.delegate = self
+
+        toggleItem = NSMenuItem(title: "Hide Mirror", action: #selector(toggleWindow), keyEquivalent: "")
         toggleItem.target = self
         menu.addItem(toggleItem)
 
@@ -49,18 +56,40 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         menu.addItem(NSMenuItem.separator())
 
+        let aboutItem = NSMenuItem(title: "About Narcissus", action: #selector(showAbout), keyEquivalent: "")
+        aboutItem.target = self
+        menu.addItem(aboutItem)
+
         let quitItem = NSMenuItem(title: "Quit Narcissus", action: #selector(quit), keyEquivalent: "q")
         quitItem.target = self
         menu.addItem(quitItem)
         return menu
     }
 
+    func menuNeedsUpdate(_ menu: NSMenu) {
+        toggleItem.title = faceWindow.isMirrorVisible ? "Hide Mirror" : "Show Mirror"
+    }
+
     @objc private func toggleWindow() {
-        faceWindow.toggleVisibility()
+        // Stop the capture session while hidden: no camera indicator light and no
+        // CPU spent detecting/rendering frames nobody can see.
+        if faceWindow.isMirrorVisible {
+            faceWindow.hideWindow()
+            cameraController.stop()
+        } else {
+            cameraController.start()
+            faceWindow.showWindow()
+            faceWindow.beginTransitionBlur()
+        }
     }
 
     @objc private func resetPosition() {
         faceWindow.resetPosition()
+    }
+
+    @objc private func showAbout() {
+        NSApp.activate(ignoringOtherApps: true)
+        NSApp.orderFrontStandardAboutPanel(nil)
     }
 
     @objc private func quit() {

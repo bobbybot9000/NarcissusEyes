@@ -23,7 +23,10 @@ final class FaceTracker {
     //
     // Exponential smoothing never mathematically reaches its target, only
     // approaches it — so "settled" is defined as several consecutive detections
-    // landing within a tiny delta of the previous smoothed rect.
+    // landing within a tiny delta of the previous smoothed rect. The completion
+    // is armed from the main thread but checked on the camera queue, so both
+    // fields are guarded by `settleLock`.
+    private let settleLock = NSLock()
     private var settleCompletion: (() -> Void)?
     private var settleConsecutiveCount = 0
     private let settleThreshold: CGFloat = 0.004
@@ -48,8 +51,10 @@ final class FaceTracker {
     /// smoothed crop rect has converged — i.e. stopped visibly moving — after a
     /// target jump (mode switch, camera switch, first detection, etc.).
     func awaitSettle(completion: @escaping () -> Void) {
+        settleLock.lock()
         settleConsecutiveCount = 0
         settleCompletion = completion
+        settleLock.unlock()
     }
 
     func process(pixelBuffer: CVPixelBuffer) {
@@ -104,15 +109,24 @@ final class FaceTracker {
     }
 
     private func checkSettled(delta: CGFloat) {
-        guard settleCompletion != nil else { return }
+        settleLock.lock()
+        guard settleCompletion != nil else {
+            settleLock.unlock()
+            return
+        }
         if delta < settleThreshold {
             settleConsecutiveCount += 1
         } else {
             settleConsecutiveCount = 0
         }
-        guard settleConsecutiveCount >= settleRequiredConsecutive else { return }
+        guard settleConsecutiveCount >= settleRequiredConsecutive else {
+            settleLock.unlock()
+            return
+        }
         let completion = settleCompletion
         settleCompletion = nil
+        settleLock.unlock()
+
         DispatchQueue.main.async {
             completion?()
         }
