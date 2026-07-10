@@ -13,8 +13,6 @@ final class FaceView: NSView, CameraFrameReceiver {
 
     /// Called when a drag begins (mouse down), before any movement.
     var onDragStart: (() -> Void)?
-    /// Called when the mouse enters (true) or exits (false) the Mirror.
-    var onHoverChange: ((Bool) -> Void)?
     /// Called on every drag update with the proposed new x origin (in screen coordinates);
     /// the owner is responsible for clamping it to the top edge / around the notch.
     var onDragMove: ((CGFloat) -> Void)?
@@ -22,8 +20,6 @@ final class FaceView: NSView, CameraFrameReceiver {
     var onDragEnd: (() -> Void)?
     /// Called when the Face/Eyes crop toggle changes.
     var onCropModeChange: ((CropMode) -> Void)?
-    /// Called when the Transparent toggle changes.
-    var onTransparencyChange: ((Bool) -> Void)?
 
     private var dragOriginWindowX: CGFloat = 0
     private var dragOriginMouseScreenX: CGFloat = 0
@@ -198,12 +194,10 @@ final class FaceView: NSView, CameraFrameReceiver {
 
     override func mouseEntered(with event: NSEvent) {
         dockView.animator().alphaValue = 1
-        onHoverChange?(true)
     }
 
     override func mouseExited(with event: NSEvent) {
         dockView.animator().alphaValue = 0
-        onHoverChange?(false)
     }
 
     // MARK: - Mirror controls
@@ -215,9 +209,19 @@ final class FaceView: NSView, CameraFrameReceiver {
         onCropModeChange?(mode)
     }
 
+    /// Transparency applies to the feed layers only — not the whole window — so
+    /// the hover-revealed dock (a sibling subview) always renders fully opaque
+    /// and stays usable while the Mirror itself is see-through.
     private func toggleTransparency() {
         isTransparent.toggle()
-        onTransparencyChange?(isTransparent)
+        let feedOpacity: Float = isTransparent ? 0.35 : 1.0
+        let backgroundAlpha: CGFloat = isTransparent ? 0.2 : 1.0
+
+        CATransaction.begin()
+        CATransaction.setAnimationDuration(0.25)
+        displayLayer.opacity = feedOpacity
+        layer?.backgroundColor = NSColor.black.withAlphaComponent(backgroundAlpha).cgColor
+        CATransaction.commit()
     }
 
     /// Square top corners, rounded bottom corners — reads as flush-mounted against

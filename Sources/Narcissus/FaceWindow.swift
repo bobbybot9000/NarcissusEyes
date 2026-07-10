@@ -8,8 +8,6 @@ final class FaceWindow: NSObject {
 
     private static let faceSize = NSSize(width: 140, height: 140)
     private static let eyesSize = NSSize(width: 200, height: 40)
-    private static let normalAlpha: CGFloat = 1.0
-    private static let transparentAlpha: CGFloat = 0.35
 
     private let panel: NSPanel
     private let faceView: FaceView
@@ -21,7 +19,6 @@ final class FaceWindow: NSObject {
     private var currentSize = FaceWindow.faceSize
     private var preferredScreen: NSScreen?
     private var dragStartScreen: NSScreen?
-    private var isTransparent = false
     private var screenParamsObserver: NSObjectProtocol?
     private var pendingRedock: DispatchWorkItem?
 
@@ -93,17 +90,6 @@ final class FaceWindow: NSObject {
         faceView.onCropModeChange = { [weak self] mode in
             self?.applyCropMode(mode)
         }
-        faceView.onTransparencyChange = { [weak self] transparent in
-            self?.isTransparent = transparent
-            self?.applyTransparency(transparent)
-        }
-        // While transparent, hovering temporarily restores full opacity so the
-        // dock controls are actually visible; mouse-exit returns to transparent.
-        faceView.onHoverChange = { [weak self] hovering in
-            guard let self, self.isTransparent else { return }
-            self.applyTransparency(!hovering)
-        }
-
         positionAtTop(restoringSavedX: true)
 
         // A resolution/scale/arrangement change on the *same* display never fires
@@ -215,13 +201,6 @@ final class FaceWindow: NSObject {
         currentY = resolved.y
         currentWidth = resolved.width
         targetX = resolved.x
-    }
-
-    private func applyTransparency(_ transparent: Bool) {
-        NSAnimationContext.runAnimationGroup { context in
-            context.duration = 0.25
-            panel.animator().alphaValue = transparent ? FaceWindow.transparentAlpha : FaceWindow.normalAlpha
-        }
     }
 
     // MARK: - Initial / restored positioning
