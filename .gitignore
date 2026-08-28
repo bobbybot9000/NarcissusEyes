@@ -2,7 +2,7 @@
 .build/
 
 # Local dev bundle produced by build_app.sh (the Xcode archive is the release path)
-Narcissus.app/
+NarcissusEyes.app/
 
 # Xcode
 DerivedData/

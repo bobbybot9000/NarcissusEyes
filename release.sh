@@ -19,7 +19,7 @@ cd "$(dirname "$0")"
 # Xcode's Organizer only indexes archives in this directory, and expects its
 # date-stamped naming convention.
 ARCHIVE_DIR="$HOME/Library/Developer/Xcode/Archives/$(date +%Y-%m-%d)"
-ARCHIVE="$ARCHIVE_DIR/Narcissus $(date +'%Y-%m-%d %H.%M').xcarchive"
+ARCHIVE="$ARCHIVE_DIR/NarcissusEyes $(date +'%Y-%m-%d %H.%M').xcarchive"
 EXPORT="build/export"
 
 mkdir -p "$ARCHIVE_DIR"
@@ -27,8 +27,8 @@ rm -rf "$EXPORT"
 mkdir -p build
 
 echo "==> Archiving"
-xcodebuild -project Narcissus.xcodeproj \
-    -scheme Narcissus \
+xcodebuild -project NarcissusEyes.xcodeproj \
+    -scheme NarcissusEyes \
     -configuration Release \
     -destination 'generic/platform=macOS' \
     -archivePath "$ARCHIVE" \
@@ -46,5 +46,5 @@ echo ""
 echo "==> Archive (visible in Xcode Organizer):"
 echo "    $ARCHIVE"
 echo "==> Package (for Transporter):"
-echo "    $EXPORT/Narcissus.pkg"
-pkgutil --check-signature "$EXPORT/Narcissus.pkg" | head -4
+echo "    $EXPORT/NarcissusEyes.pkg"
+pkgutil --check-signature "$EXPORT/NarcissusEyes.pkg" | head -4

@@ -8,20 +8,20 @@ cd "$(dirname "$0")"
 swift build -c release --triple arm64-apple-macosx12.0
 swift build -c release --triple x86_64-apple-macosx12.0
 
-APP="Narcissus.app"
+APP="NarcissusEyes.app"
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS"
 mkdir -p "$APP/Contents/Resources"
 
 lipo -create \
-    .build/arm64-apple-macosx/release/Narcissus \
-    .build/x86_64-apple-macosx/release/Narcissus \
-    -output "$APP/Contents/MacOS/Narcissus"
-cp Sources/Narcissus/Info.plist "$APP/Contents/Info.plist"
+    .build/arm64-apple-macosx/release/NarcissusEyes \
+    .build/x86_64-apple-macosx/release/NarcissusEyes \
+    -output "$APP/Contents/MacOS/NarcissusEyes"
+cp Sources/NarcissusEyes/Info.plist "$APP/Contents/Info.plist"
 
 # Ad-hoc sign so macOS grants camera permission prompts correctly.
 # (App Store distribution uses the Xcode archive path instead of this script.)
 codesign --force --deep --sign - "$APP"
 
-lipo -info "$APP/Contents/MacOS/Narcissus"
+lipo -info "$APP/Contents/MacOS/NarcissusEyes"
 echo "Built $APP"

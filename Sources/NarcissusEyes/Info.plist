@@ -2,26 +2,30 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+    <!-- CFBundleName is the menu-bar/About name (Apple advises <=15 chars);
+         CFBundleDisplayName is what Finder and the App Store show. -->
     <key>CFBundleName</key>
-    <string>Narcissus</string>
+    <string>Narcissus Eyes</string>
     <key>CFBundleDisplayName</key>
-    <string>Narcissus</string>
+    <string>Narcissus Eyes</string>
     <key>CFBundleIdentifier</key>
-    <string>com.bobbystrobeck.narcissus</string>
+    <string>com.bobbystrobeck.narcissuseyes</string>
     <key>CFBundleVersion</key>
     <string>2</string>
     <key>CFBundleShortVersionString</key>
     <string>1.5</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
+    <!-- No space: keeps the binary name identical between the SwiftPM dev
+         build and the Xcode release build. -->
     <key>CFBundleExecutable</key>
-    <string>Narcissus</string>
+    <string>NarcissusEyes</string>
     <key>LSMinimumSystemVersion</key>
     <string>12.0</string>
     <key>LSUIElement</key>
     <true/>
     <key>NSCameraUsageDescription</key>
-    <string>Narcissus shows a small live view of your own face so you can keep good eye contact on video calls.</string>
+    <string>Narcissus Eyes shows a small live view of your own face so you can keep good eye contact on video calls.</string>
     <key>NSHighResolutionCapable</key>
     <true/>
     <key>LSApplicationCategoryType</key>
