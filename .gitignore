@@ -1,4 +1,15 @@
+# SwiftPM
 .build/
+
+# Local dev bundle produced by build_app.sh (the Xcode archive is the release path)
 Narcissus.app/
+
+# Xcode
+DerivedData/
 *.xcodeproj/xcuserdata/
+*.xcodeproj/project.xcworkspace/xcuserdata/
+*.xcworkspace/xcuserdata/
+*.xcarchive
+
+# macOS
 .DS_Store

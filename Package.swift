@@ -8,7 +8,9 @@ let package = Package(
         .executableTarget(
             name: "Narcissus",
             path: "Sources/Narcissus",
-            exclude: ["Info.plist"]
+            // Both are consumed by the Xcode target (the App Store build path),
+            // not by SwiftPM — which would otherwise flag them as stray resources.
+            exclude: ["Info.plist", "Assets.xcassets"]
         )
     ]
 )
