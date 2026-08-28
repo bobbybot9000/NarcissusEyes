@@ -13,3 +13,6 @@ DerivedData/
 
 # macOS
 .DS_Store
+
+# Release artifacts from release.sh
+/build/
