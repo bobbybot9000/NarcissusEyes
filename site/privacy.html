@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy Policy — Narcissus Eyes</title>
+<meta name="description" content="Narcissus Eyes collects no data. It has no network access at all.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Archivo:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
+<style>
+  :root {
+    --ground:  #0B0E13;
+    --line:    #1F2833;
+    --ink:     #EAEFF4;
+    --ink-2:   #94A1AE;
+    --ink-3:   #5F6C79;
+    --iris:    #3E8FB5;
+    --iris-lt: #7CC7E8;
+    --display: "Instrument Serif", Georgia, "Times New Roman", serif;
+    --body:    Archivo, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --mono:    "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 16px;
+    line-height: 1.68;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a { color: var(--iris-lt); text-decoration: none; }
+  a:hover { color: #A5DCF3; }
+  a:focus-visible { outline: 2px solid var(--iris-lt); outline-offset: 3px; border-radius: 3px; }
+
+  .wrap { max-width: 680px; margin: 0 auto; padding-inline: 24px; }
+
+  .nav { border-bottom: 1px solid var(--line); }
+  .nav .wrap { max-width: 1120px; padding-block: 20px; }
+  .brand { display: inline-flex; align-items: center; gap: 12px; color: var(--ink); }
+  .brand span { font-family: var(--display); font-size: 21px; }
+
+  header.doc { padding-block: clamp(48px, 8vw, 76px) 0; }
+  .label {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin: 0 0 20px;
+  }
+  h1 { font-family: var(--display); font-weight: 400; font-size: clamp(34px, 5vw, 48px); line-height: 1.08; margin: 0 0 20px; }
+  .lede { font-size: 18px; color: var(--ink-2); margin: 0; }
+
+  main { padding-block: clamp(36px, 5vw, 52px) clamp(48px, 7vw, 80px); }
+  h2 { font-family: var(--display); font-weight: 400; font-size: 26px; margin: 44px 0 12px; }
+  p { margin: 0 0 16px; color: var(--ink-2); }
+  p strong { color: var(--ink); font-weight: 600; }
+  ul { margin: 0 0 16px; padding-left: 0; list-style: none; display: flex; flex-direction: column; gap: 9px; }
+  li { position: relative; padding-left: 20px; color: var(--ink-2); }
+  li::before { content: ""; position: absolute; left: 3px; top: 11px; width: 5px; height: 5px; border-radius: 50%; background: var(--iris); }
+
+  .callout {
+    border-left: 2px solid var(--iris);
+    padding: 4px 0 4px 20px;
+    margin: 28px 0;
+  }
+  .callout p { color: var(--ink); margin: 0; font-size: 17px; }
+
+  footer { border-top: 1px solid var(--line); }
+  .foot { padding-block: 32px; display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; font-family: var(--mono); font-size: 11.5px; color: var(--ink-3); }
+  .foot a { color: var(--ink-3); }
+  .updated { font-family: var(--mono); font-size: 12px; color: var(--ink-3); margin-top: 40px; }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="wrap">
+    <a class="brand" href="/narcissuseyes">
+      <svg width="26" height="26" viewBox="0 0 100 100" aria-hidden="true">
+        <rect width="100" height="100" rx="22" fill="#171C24"/>
+        <path d="M18 50 Q50 22 82 50 Q50 78 18 50 Z" fill="#F2F5F8"/>
+        <circle cx="50" cy="50" r="15" fill="#2E6F8E"/>
+        <circle cx="50" cy="50" r="6.5" fill="#0B0E13"/>
+        <circle cx="44" cy="44" r="4" fill="#fff" opacity=".9"/>
+      </svg>
+      <span>Narcissus Eyes</span>
+    </a>
+  </div>
+</nav>
+
+<header class="doc">
+  <div class="wrap">
+    <p class="label">Privacy Policy</p>
+    <h1>Narcissus Eyes collects nothing.</h1>
+    <p class="lede">Not "collects only what it needs", or "collects anonymized usage data". Nothing at all — and the app is built so that it could not, even by mistake.</p>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+
+    <h2>What is collected</h2>
+    <p>Nothing. Narcissus Eyes has no account system, no analytics, no crash reporting, no telemetry, and no advertising. No information about you or your Mac is gathered, stored, or transmitted.</p>
+
+    <div class="callout">
+      <p>The app is sandboxed with exactly one entitlement — camera access. It holds <strong>no networking entitlement of any kind</strong>, so there is no mechanism by which any data could leave your device.</p>
+    </div>
+
+    <h2>How the camera is used</h2>
+    <p>Narcissus Eyes shows you a live view of your own webcam. To crop that view to your face, it runs Apple's on-device Vision framework locally on your Mac.</p>
+    <p>Video frames are read from the camera, processed in memory, drawn to the small window on your screen, and immediately discarded. Frames are <strong>never</strong> recorded, saved to disk, uploaded, or shared with anyone — including the developer.</p>
+    <p>Your Mac shows its camera indicator light whenever the app is capturing, exactly as it does for any other app. Hiding the mirror from the menu bar stops capture entirely and turns the indicator off.</p>
+
+    <h2>What is stored on your Mac</h2>
+    <p>The app saves a small amount of local preference data so it behaves consistently between launches:</p>
+    <ul>
+      <li>The position of the mirror on your screen</li>
+      <li>Which edge or display it was last docked to</li>
+    </ul>
+    <p>This stays inside the app's sandbox container on your Mac. It contains no personal information and is never transmitted. Deleting the app removes it.</p>
+
+    <h2>Third parties</h2>
+    <p>There are none. Narcissus Eyes includes no third-party SDKs, frameworks, trackers, or services. It communicates with no servers, including any operated by the developer.</p>
+
+    <h2>Children</h2>
+    <p>Narcissus Eyes is suitable for all ages and collects no data from anyone, regardless of age.</p>
+
+    <h2>Changes to this policy</h2>
+    <p>If this policy ever changes, the revised version will be posted on this page with an updated date below. Should a future version of the app ever collect data — which is not planned — that change would be disclosed here and in the App Store privacy label before it ships.</p>
+
+    <h2>Contact</h2>
+    <p>Questions about this policy, or about the app, can go to <a href="mailto:[YOUR SUPPORT EMAIL]">[YOUR SUPPORT EMAIL]</a>.</p>
+
+    <p class="updated">Last updated: [DATE YOU PUBLISH]</p>
+
+  </div>
+</main>
+
+<footer>
+  <div class="wrap foot">
+    <span>© 2026 Bobby Strobeck</span>
+    <div><a href="/narcissuseyes">Narcissus Eyes</a></div>
+  </div>
+</footer>
+
+</body>
+</html>

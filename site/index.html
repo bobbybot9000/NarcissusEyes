@@ -1,0 +1,404 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Narcissus Eyes — eye contact on video calls</title>
+<meta name="description" content="A free macOS menu-bar app that docks a small mirror of your webcam beneath the lens, so glancing at yourself puts your eyeline on the camera.">
+
+<meta property="og:title" content="Narcissus Eyes">
+<meta property="og:description" content="Everyone looks at the screen. Nobody looks at the camera. A free macOS app that fixes your eyeline on video calls.">
+<meta property="og:type" content="website">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Archivo:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
+<style>
+  :root {
+    --ground:  #0B0E13;
+    --band:    #0E131A;
+    --panel:   #101720;
+    --line:    #1F2833;
+    --line-2:  #2C3844;
+    --ink:     #EAEFF4;
+    --ink-2:   #94A1AE;
+    --ink-3:   #5F6C79;
+    --iris:    #3E8FB5;
+    --iris-lt: #7CC7E8;
+    --display: "Instrument Serif", Georgia, "Times New Roman", serif;
+    --body:    Archivo, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --mono:    "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a { color: var(--iris-lt); text-decoration: none; }
+  a:hover { color: #A5DCF3; }
+  a:focus-visible, button:focus-visible { outline: 2px solid var(--iris-lt); outline-offset: 3px; border-radius: 3px; }
+
+  .wrap { max-width: 1120px; margin: 0 auto; padding-inline: 40px; }
+  .band { background: var(--band); border-block: 1px solid var(--line); }
+  .rule-top { border-top: 1px solid var(--line); }
+
+  .label {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin: 0;
+  }
+
+  h1, h2, h3 { font-family: var(--display); font-weight: 400; margin: 0; }
+  h1 { font-size: clamp(38px, 6vw, 68px); line-height: 1.04; letter-spacing: -0.015em; text-wrap: balance; }
+  h2 { font-size: clamp(30px, 4vw, 46px); line-height: 1.1; }
+  h3 { font-size: clamp(22px, 2.4vw, 26px); }
+  h4 { font-family: var(--body); font-weight: 600; font-size: 16px; margin: 0; }
+  p  { margin: 0; }
+
+  /* --- Nav --- */
+  .nav { border-bottom: 1px solid var(--line); }
+  .nav-inner { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding-block: 20px; }
+  .brand { display: flex; align-items: center; gap: 12px; color: var(--ink); }
+  .brand span { font-family: var(--display); font-size: 21px; }
+  .nav-links { display: flex; gap: 28px; font-family: var(--mono); font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; }
+  .nav-links a { color: var(--ink-2); }
+
+  /* --- Hero --- */
+  .hero { padding-block: clamp(48px, 8vw, 88px) clamp(44px, 6vw, 72px); display: flex; flex-direction: column; gap: 28px; align-items: flex-start; }
+  .eyebrow { display: flex; align-items: center; gap: 10px; }
+  .eyebrow i { width: 22px; height: 1px; background: var(--iris); display: block; }
+  .eyebrow span { font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--iris); font-style: normal; }
+  .hero h1 { max-width: 15ch; }
+  .lede { font-size: clamp(17px, 2vw, 19px); color: var(--ink-2); max-width: 56ch; }
+  .cta-row { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+  .cta {
+    display: inline-flex; align-items: center; gap: 11px;
+    background: var(--iris); color: #08121A;
+    padding: 14px 26px; border-radius: 6px;
+    font-weight: 600; font-size: 15px; min-height: 48px;
+  }
+  .cta:hover { background: #4EA2C9; color: #08121A; }
+  .fine { font-family: var(--mono); font-size: 12.5px; color: var(--ink-3); }
+
+  /* --- Sections --- */
+  .sec { padding-block: clamp(48px, 7vw, 76px); display: flex; flex-direction: column; gap: 22px; align-items: flex-start; }
+  .sec p { color: var(--ink-2); max-width: 62ch; font-size: clamp(15.5px, 1.7vw, 16.5px); }
+  .sec h2 { max-width: 20ch; }
+
+  figure { margin: 0; width: 100%; overflow-x: auto; }
+  figure svg { display: block; height: auto; }
+  /* The A/B comparison is the argument — stack it rather than let it
+     split across a horizontal scroll on narrow screens. */
+  .dgm-tall { display: none; }
+  @media (max-width: 760px) {
+    .dgm-wide { display: none; }
+    .dgm-tall { display: block; }
+    figure { overflow-x: visible; }
+  }
+
+  /* --- Features --- */
+  .features { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 56px 72px; padding-block: clamp(48px, 7vw, 80px) 24px; }
+  .feature { display: flex; flex-direction: column; gap: 12px; }
+  .feature p { color: var(--ink-2); font-size: 15.5px; }
+
+  /* --- Notch panel --- */
+  .panel {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+    padding: clamp(28px, 4vw, 44px) clamp(24px, 4vw, 48px);
+    display: flex; gap: clamp(28px, 4vw, 48px); align-items: center; flex-wrap: wrap;
+  }
+  .panel-copy { flex: 1 1 320px; display: flex; flex-direction: column; gap: 14px; }
+  .panel-copy p { color: var(--ink-2); font-size: 15.5px; }
+  .panel-art { flex: 0 0 260px; }
+
+  /* --- Specs --- */
+  .specs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .spec { background: var(--ground); padding: 22px 24px; display: flex; flex-direction: column; gap: 5px; }
+  .spec dt { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-3); }
+  .spec dd { margin: 0; font-size: 17px; }
+
+  /* --- Support --- */
+  .faq { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 34px 64px; width: 100%; }
+  .faq p { color: var(--ink-2); font-size: 15px; margin-top: 8px; }
+  .contact { border-top: 1px solid var(--line); padding-top: 32px; margin-top: 12px; display: flex; gap: 40px; flex-wrap: wrap; width: 100%; }
+  .contact div { display: flex; flex-direction: column; gap: 6px; }
+  .contact dt { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-3); }
+  .contact dd { margin: 0; font-size: 17px; }
+
+  /* --- Footer --- */
+  footer { border-top: 1px solid var(--line); }
+  .foot-inner { padding-block: 36px; display: flex; justify-content: space-between; align-items: center; gap: 24px; flex-wrap: wrap; font-family: var(--mono); font-size: 11.5px; color: var(--ink-3); }
+  .foot-inner a { color: var(--ink-3); }
+  .foot-links { display: flex; gap: 26px; }
+
+  @media (max-width: 760px) {
+    .wrap { padding-inline: 22px; }
+    .nav-links { display: none; }
+    .features, .faq, .specs { grid-template-columns: minmax(0, 1fr); }
+    .specs { gap: 1px; }
+    .cta { width: 100%; justify-content: center; }
+    .cta-row { width: 100%; }
+    .fine { width: 100%; text-align: center; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="/narcissuseyes">
+      <svg width="26" height="26" viewBox="0 0 100 100" aria-hidden="true">
+        <rect width="100" height="100" rx="22" fill="#171C24"/>
+        <path d="M18 50 Q50 22 82 50 Q50 78 18 50 Z" fill="#F2F5F8"/>
+        <circle cx="50" cy="50" r="15" fill="#2E6F8E"/>
+        <circle cx="50" cy="50" r="6.5" fill="#0B0E13"/>
+        <circle cx="44" cy="44" r="4" fill="#fff" opacity=".9"/>
+      </svg>
+      <span>Narcissus Eyes</span>
+    </a>
+    <div class="nav-links">
+      <a href="#how">How it works</a>
+      <a href="#privacy">Privacy</a>
+      <a href="#support">Support</a>
+    </div>
+  </div>
+</nav>
+
+<header class="wrap hero">
+  <p class="eyebrow"><i></i><span>Free · macOS 12+ · Universal</span></p>
+  <h1>Everyone looks at the screen. Nobody looks at the camera.</h1>
+  <p class="lede">Narcissus Eyes docks a small mirror of your own webcam directly beneath the lens. The thing that pulls your eyes becomes the thing you ought to be looking at.</p>
+  <div class="cta-row">
+    <a class="cta" href="[APP STORE LINK]">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#08121A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M12 3v13"/><path d="M6 12l6 6 6-6"/><path d="M4 21h16"/>
+      </svg>
+      Download on the Mac App Store
+    </a>
+    <span class="fine">Under 1&nbsp;MB · No account · No network</span>
+  </div>
+</header>
+
+<section id="how" class="band">
+  <div class="wrap sec">
+    <p class="label">Fig. 1 — Gaze offset, measured from lens axis</p>
+    <figure>
+      <svg class="dgm-wide" viewBox="0 0 780 270" style="width:100%; min-width:620px;" role="img" aria-label="Two schematics. Without the app, the eyes rest well below the camera. With it, the mirror sits on the lens axis so the gaze offset is negligible.">
+        <defs>
+          <marker id="tk" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
+            <path d="M3 0 L3 6" stroke="#3E8FB5" stroke-width="1.2"/>
+          </marker>
+        </defs>
+
+        <text x="10" y="16" fill="#5F6C79" font-family="IBM Plex Mono, monospace" font-size="11" letter-spacing="1.4">A · WITHOUT</text>
+        <rect x="10" y="40" width="330" height="200" rx="9" fill="#141A23" stroke="#2C3844"/>
+        <rect x="152" y="40" width="46" height="11" rx="5" fill="#0B0E13"/>
+        <circle cx="175" cy="45" r="3.4" fill="#3E8FB5"/>
+        <line x1="175" y1="45" x2="175" y2="240" stroke="#2C3844" stroke-dasharray="2 5"/>
+        <circle cx="175" cy="163" r="15" fill="none" stroke="#94A1AE" stroke-width="1.3"/>
+        <line x1="160" y1="163" x2="190" y2="163" stroke="#94A1AE" stroke-width="1.3"/>
+        <line x1="175" y1="148" x2="175" y2="178" stroke="#94A1AE" stroke-width="1.3"/>
+        <text x="200" y="167" fill="#94A1AE" font-family="Archivo, sans-serif" font-size="12.5">where your eyes go</text>
+        <line x1="70" y1="45" x2="70" y2="163" stroke="#3E8FB5" stroke-width="1.2" marker-start="url(#tk)" marker-end="url(#tk)"/>
+        <text x="60" y="110" fill="#7CC7E8" font-family="IBM Plex Mono, monospace" font-size="11" text-anchor="end">118 px</text>
+        <text x="10" y="262" fill="#5F6C79" font-family="Archivo, sans-serif" font-size="12.5">Reads as looking down, or past them.</text>
+
+        <text x="440" y="16" fill="#7CC7E8" font-family="IBM Plex Mono, monospace" font-size="11" letter-spacing="1.4">B · WITH NARCISSUS EYES</text>
+        <rect x="440" y="40" width="330" height="200" rx="9" fill="#141A23" stroke="#2C3844"/>
+        <rect x="582" y="40" width="46" height="11" rx="5" fill="#0B0E13"/>
+        <circle cx="605" cy="45" r="3.4" fill="#3E8FB5"/>
+        <line x1="605" y1="45" x2="605" y2="240" stroke="#2C3844" stroke-dasharray="2 5"/>
+        <rect x="582" y="51" width="46" height="36" fill="#1E2A34" stroke="#3E8FB5" stroke-width="1.3"/>
+        <path d="M582 83 Q582 87 586 87 L624 87 Q628 87 628 83" fill="none" stroke="#3E8FB5" stroke-width="1.3"/>
+        <circle cx="605" cy="68" r="7" fill="none" stroke="#7CC7E8" stroke-width="1.1"/>
+        <circle cx="605" cy="68" r="2.4" fill="#7CC7E8"/>
+        <text x="642" y="72" fill="#7CC7E8" font-family="Archivo, sans-serif" font-size="12.5">the mirror</text>
+        <line x1="500" y1="45" x2="500" y2="68" stroke="#3E8FB5" stroke-width="1.2" marker-start="url(#tk)" marker-end="url(#tk)"/>
+        <text x="490" y="60" fill="#7CC7E8" font-family="IBM Plex Mono, monospace" font-size="11" text-anchor="end">23 px</text>
+        <text x="440" y="262" fill="#94A1AE" font-family="Archivo, sans-serif" font-size="12.5">Reads as looking at them.</text>
+      </svg>
+
+      <svg class="dgm-tall" viewBox="0 0 340 566" style="width:100%;" role="img" aria-label="Two schematics stacked. Without the app, the eyes rest well below the camera. With it, the mirror sits on the lens axis so the gaze offset is negligible.">
+        <defs>
+          <marker id="tk3" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
+            <path d="M3 0 L3 6" stroke="#3E8FB5" stroke-width="1.2"/>
+          </marker>
+        </defs>
+        <text x="8" y="14" fill="#5F6C79" font-family="IBM Plex Mono, monospace" font-size="11" letter-spacing="1.4">A · WITHOUT</text>
+        <rect x="8" y="36" width="324" height="190" rx="9" fill="#141A23" stroke="#2C3844"/>
+        <rect x="147" y="36" width="46" height="11" rx="5" fill="#0B0E13"/>
+        <circle cx="170" cy="41" r="3.4" fill="#3E8FB5"/>
+        <line x1="170" y1="41" x2="170" y2="226" stroke="#2C3844" stroke-dasharray="2 5"/>
+        <circle cx="170" cy="150" r="15" fill="none" stroke="#94A1AE" stroke-width="1.3"/>
+        <line x1="155" y1="150" x2="185" y2="150" stroke="#94A1AE" stroke-width="1.3"/>
+        <line x1="170" y1="135" x2="170" y2="165" stroke="#94A1AE" stroke-width="1.3"/>
+        <text x="194" y="154" fill="#94A1AE" font-family="Archivo, sans-serif" font-size="12">where your eyes go</text>
+        <line x1="66" y1="41" x2="66" y2="150" stroke="#3E8FB5" stroke-width="1.2" marker-start="url(#tk3)" marker-end="url(#tk3)"/>
+        <text x="56" y="100" fill="#7CC7E8" font-family="IBM Plex Mono, monospace" font-size="11" text-anchor="end">118 px</text>
+        <text x="8" y="248" fill="#5F6C79" font-family="Archivo, sans-serif" font-size="12">Reads as looking down, or past them.</text>
+
+        <text x="8" y="310" fill="#7CC7E8" font-family="IBM Plex Mono, monospace" font-size="11" letter-spacing="1.4">B · WITH NARCISSUS EYES</text>
+        <rect x="8" y="332" width="324" height="190" rx="9" fill="#141A23" stroke="#2C3844"/>
+        <rect x="147" y="332" width="46" height="11" rx="5" fill="#0B0E13"/>
+        <circle cx="170" cy="337" r="3.4" fill="#3E8FB5"/>
+        <line x1="170" y1="337" x2="170" y2="522" stroke="#2C3844" stroke-dasharray="2 5"/>
+        <rect x="147" y="343" width="46" height="36" fill="#1E2A34" stroke="#3E8FB5" stroke-width="1.3"/>
+        <path d="M147 375 Q147 379 151 379 L189 379 Q193 379 193 375" fill="none" stroke="#3E8FB5" stroke-width="1.3"/>
+        <circle cx="170" cy="360" r="7" fill="none" stroke="#7CC7E8" stroke-width="1.1"/>
+        <circle cx="170" cy="360" r="2.4" fill="#7CC7E8"/>
+        <text x="204" y="364" fill="#7CC7E8" font-family="Archivo, sans-serif" font-size="12">the mirror</text>
+        <line x1="66" y1="337" x2="66" y2="360" stroke="#3E8FB5" stroke-width="1.2" marker-start="url(#tk3)" marker-end="url(#tk3)"/>
+        <text x="56" y="353" fill="#7CC7E8" font-family="IBM Plex Mono, monospace" font-size="11" text-anchor="end">23 px</text>
+        <text x="8" y="544" fill="#94A1AE" font-family="Archivo, sans-serif" font-size="12">Reads as looking at them.</text>
+      </svg>
+    </figure>
+  </div>
+</section>
+
+<section class="wrap features">
+  <div class="feature">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3E8FB5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M4 8V5a1 1 0 011-1h3"/><path d="M16 4h3a1 1 0 011 1v3"/>
+      <path d="M20 16v3a1 1 0 01-1 1h-3"/><path d="M8 20H5a1 1 0 01-1-1v-3"/>
+      <circle cx="12" cy="12" r="3.2"/>
+    </svg>
+    <h3>It follows your face</h3>
+    <p>Not a fixed crop of the frame. On-device face tracking keeps you centered as you shift in your chair, lean in, or sit back.</p>
+  </div>
+
+  <div class="feature">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3E8FB5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6z"/><circle cx="12" cy="12" r="2.6"/>
+    </svg>
+    <h3>Eyes mode</h3>
+    <p>Shrinks the mirror to a thin strip framing just your eyes and brows. Enough to check your gaze. Small enough to forget it's there.</p>
+  </div>
+
+  <div class="feature">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3E8FB5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M3 3l18 18"/>
+      <path d="M10.6 5.1A9.6 9.6 0 0112 5c6.5 0 10 6 10 6a17 17 0 01-3.2 3.9"/>
+      <path d="M6.2 6.2A16.6 16.6 0 002 11s3.5 6 10 6a9.6 9.6 0 004.2-.9"/>
+    </svg>
+    <h3>Invisible when you share</h3>
+    <p>Excluded from screen capture at the window level. Share your screen and it simply isn't in the picture — no self-view echoing back at the room.</p>
+  </div>
+
+  <div class="feature">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3E8FB5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/>
+    </svg>
+    <h3>Knows your setup</h3>
+    <p>Plug in a dock and it moves to the external display and camera on its own. Unplug and it returns to the built-in. Drag it across screens and it re-targets to match.</p>
+  </div>
+</section>
+
+<section class="wrap" style="padding-block: clamp(40px,6vw,72px);">
+  <div class="panel">
+    <div class="panel-copy">
+      <p class="label">Hardware fit</p>
+      <h3 style="font-size: clamp(26px,3vw,32px);">It grows out of the notch</h3>
+      <p>On MacBook Pro and MacBook Air, the mirror tucks directly beneath the notch and matches its exact width — read live from the display, not guessed per model. It reads as part of the hardware rather than a window sitting on top of it. Every other Mac docks flush to the top edge.</p>
+    </div>
+    <div class="panel-art">
+      <svg viewBox="0 0 260 150" style="width:100%;" role="img" aria-label="The mirror docked beneath a MacBook notch, matching its width">
+        <defs>
+          <marker id="tk2" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
+            <path d="M3 0 L3 6" stroke="#3E8FB5" stroke-width="1.2"/>
+          </marker>
+        </defs>
+        <rect x="4" y="10" width="252" height="130" rx="8" fill="#141A23" stroke="#2C3844"/>
+        <path d="M96 10 H164 V26 Q164 32 158 32 H102 Q96 32 96 26 Z" fill="#0B0E13"/>
+        <rect x="96" y="32" width="68" height="52" fill="#1E2A34" stroke="#3E8FB5" stroke-width="1.3"/>
+        <path d="M96 76 Q96 84 104 84 L156 84 Q164 84 164 76" fill="none" stroke="#3E8FB5" stroke-width="1.3"/>
+        <circle cx="130" cy="56" r="11" fill="none" stroke="#7CC7E8" stroke-width="1.2"/>
+        <circle cx="130" cy="56" r="4" fill="#7CC7E8"/>
+        <line x1="96" y1="98" x2="164" y2="98" stroke="#3E8FB5" marker-start="url(#tk2)" marker-end="url(#tk2)"/>
+        <text x="130" y="116" fill="#7CC7E8" font-family="IBM Plex Mono, monospace" font-size="10" text-anchor="middle">matched width</text>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<section id="privacy" class="band">
+  <div class="wrap sec">
+    <p class="label">Privacy</p>
+    <h2>No network access. Not restricted — absent.</h2>
+    <p>Narcissus Eyes is sandboxed with exactly one entitlement: the camera. It has no networking entitlement of any kind, which means there is no code path by which a frame could leave your Mac — not disabled, not opt-in, not there.</p>
+    <p>Frames go from the camera, through on-device face detection, to the pixels on your screen, and are discarded. No account, no analytics, no telemetry, no server to trust. The App Store privacy label reads <span style="color:var(--ink)">Data Not Collected</span>, and it is the whole truth rather than a careful one.</p>
+  </div>
+</section>
+
+<section class="rule-top">
+  <div class="wrap sec">
+    <p class="label">Specification</p>
+    <dl class="specs" style="width:100%; margin:0;">
+      <div class="spec"><dt>Price</dt><dd>Free</dd></div>
+      <div class="spec"><dt>Download size</dt><dd>Under 1 MB</dd></div>
+      <div class="spec"><dt>Requires</dt><dd>macOS 12 or later</dd></div>
+      <div class="spec"><dt>Architecture</dt><dd>Universal</dd></div>
+      <div class="spec"><dt>Entitlements</dt><dd>Camera only</dd></div>
+      <div class="spec"><dt>Dock icon</dt><dd>None — menu bar only</dd></div>
+    </dl>
+  </div>
+</section>
+
+<section id="support" class="band">
+  <div class="wrap sec">
+    <p class="label">Support</p>
+    <h2 style="font-size: clamp(28px,3.6vw,40px);">Something not working?</h2>
+
+    <div class="faq">
+      <div>
+        <h4>I don't see it after installing</h4>
+        <p>There's no Dock icon by design. Look for the eye in your menu bar, at the top right of the screen. The mirror itself sits at the top of your display, once you grant camera access.</p>
+      </div>
+      <div>
+        <h4>It doesn't appear in screenshots</h4>
+        <p>That's deliberate, and it's the point. The mirror is excluded from screen capture so it never leaks into a screen share. Look at the display itself rather than a capture.</p>
+      </div>
+      <div>
+        <h4>The camera feed is black</h4>
+        <p>Camera access was likely declined. Open System Settings → Privacy &amp; Security → Camera, enable Narcissus Eyes, then relaunch it from the menu bar.</p>
+      </div>
+      <div>
+        <h4>It won't tuck under my notch</h4>
+        <p>Notch docking needs a display that has one. On external monitors and older MacBooks the mirror docks flush to the top edge instead — that's expected behavior, not a fault.</p>
+      </div>
+    </div>
+
+    <dl class="contact">
+      <div><dt>Email</dt><dd><a href="mailto:[YOUR SUPPORT EMAIL]">[YOUR SUPPORT EMAIL]</a></dd></div>
+      <div><dt>Typical reply</dt><dd style="color:var(--ink-2)">Within a couple of days</dd></div>
+    </dl>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot-inner">
+    <span>© 2026 Bobby Strobeck</span>
+    <div class="foot-links">
+      <a href="/narcissuseyes/privacy">Privacy Policy</a>
+      <a href="#support">Support</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
