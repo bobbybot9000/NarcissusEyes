@@ -3,10 +3,12 @@
 #
 #   ./release.sh
 #
-# Produces build/export/Narcissus.pkg, signed with Apple Distribution and the
-# 3rd Party Mac Developer Installer cert. Upload it with Xcode's Organizer or
-# Apple's Transporter app — both handle the Apple ID sign-in that this script
-# deliberately does not touch.
+# Archives into ~/Library/Developer/Xcode/Archives/ so the build shows up in
+# Xcode's Organizer (Window > Organizer), and also exports a signed .pkg to
+# build/export/ for uploading via Apple's Transporter app.
+#
+# Upload with Organizer's "Distribute App" or Transporter — both handle the
+# Apple ID sign-in that this script deliberately does not touch.
 #
 # Bump CURRENT_PROJECT_VERSION in the Xcode project before each upload; App
 # Store Connect rejects a build number it has already seen.
@@ -14,10 +16,14 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-ARCHIVE="build/Narcissus.xcarchive"
+# Xcode's Organizer only indexes archives in this directory, and expects its
+# date-stamped naming convention.
+ARCHIVE_DIR="$HOME/Library/Developer/Xcode/Archives/$(date +%Y-%m-%d)"
+ARCHIVE="$ARCHIVE_DIR/Narcissus $(date +'%Y-%m-%d %H.%M').xcarchive"
 EXPORT="build/export"
 
-rm -rf "$ARCHIVE" "$EXPORT"
+mkdir -p "$ARCHIVE_DIR"
+rm -rf "$EXPORT"
 mkdir -p build
 
 echo "==> Archiving"
@@ -37,5 +43,8 @@ xcodebuild -exportArchive \
     -allowProvisioningUpdates
 
 echo ""
-echo "==> Package ready: $EXPORT/Narcissus.pkg"
+echo "==> Archive (visible in Xcode Organizer):"
+echo "    $ARCHIVE"
+echo "==> Package (for Transporter):"
+echo "    $EXPORT/Narcissus.pkg"
 pkgutil --check-signature "$EXPORT/Narcissus.pkg" | head -4
