@@ -16,3 +16,6 @@ DerivedData/
 
 # Release artifacts from release.sh
 /build/
+
+# Built DMG, staged into site/ for upload by make_dmg.sh
+site/*.dmg

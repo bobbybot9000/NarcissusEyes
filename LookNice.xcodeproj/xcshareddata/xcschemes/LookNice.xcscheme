@@ -15,9 +15,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "AA0000000000000000000005"
-               BuildableName = "NarcissusEyes.app"
-               BlueprintName = "NarcissusEyes"
-               ReferencedContainer = "container:NarcissusEyes.xcodeproj">
+               BuildableName = "LookNice.app"
+               BlueprintName = "LookNice"
+               ReferencedContainer = "container:LookNice.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -45,9 +45,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "AA0000000000000000000005"
-            BuildableName = "NarcissusEyes.app"
-            BlueprintName = "NarcissusEyes"
-            ReferencedContainer = "container:NarcissusEyes.xcodeproj">
+            BuildableName = "LookNice.app"
+            BlueprintName = "LookNice"
+            ReferencedContainer = "container:LookNice.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -62,9 +62,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "AA0000000000000000000005"
-            BuildableName = "NarcissusEyes.app"
-            BlueprintName = "NarcissusEyes"
-            ReferencedContainer = "container:NarcissusEyes.xcodeproj">
+            BuildableName = "LookNice.app"
+            BlueprintName = "LookNice"
+            ReferencedContainer = "container:LookNice.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

@@ -1,10 +1,10 @@
 #!/usr/bin/env swift
 
-// Generates Narcissus's app icon at every size macOS asks for.
+// Generates LookNice's app icon at every size macOS asks for.
 //
 //   swift Tools/make_icon.swift
 //
-// Writes PNGs into Sources/NarcissusEyes/Assets.xcassets/AppIcon.appiconset/.
+// Writes PNGs into Sources/LookNice/Assets.xcassets/AppIcon.appiconset/.
 // Kept in the repo so the icon stays editable — tweak the constants below and
 // re-run rather than hand-editing exported bitmaps.
 
@@ -161,7 +161,7 @@ let outputs: [(CGFloat, String)] = [
 
 let root = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
 let outDir = root
-    .appendingPathComponent("Sources/NarcissusEyes/Assets.xcassets/AppIcon.appiconset")
+    .appendingPathComponent("Sources/LookNice/Assets.xcassets/AppIcon.appiconset")
 try FileManager.default.createDirectory(at: outDir, withIntermediateDirectories: true)
 
 for (size, name) in outputs {
