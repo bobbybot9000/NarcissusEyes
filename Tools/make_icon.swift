@@ -5,36 +5,37 @@
 //   swift Tools/make_icon.swift
 //
 // Writes PNGs into Sources/LookNice/Assets.xcassets/AppIcon.appiconset/.
-// Kept in the repo so the icon stays editable — tweak the constants below and
-// re-run rather than hand-editing exported bitmaps.
+// The mark is 👀 — a pair of eyes — so it reads the same as the emoji used
+// everywhere else for this project. Kept in the repo so the icon stays
+// editable: tweak the constants and re-run rather than editing bitmaps.
 
 import AppKit
 import CoreGraphics
 import Foundation
 
-// MARK: - Design constants
+// MARK: - Design constants (all as a fraction of the icon's edge)
 
-let cornerRadiusRatio: CGFloat = 0.2237  // Apple's rounded-rect proportion
-let eyeHalfWidthRatio: CGFloat = 0.320
-let eyeCurveRatio: CGFloat = 0.300       // how open the eye is
-let irisRadiusRatio: CGFloat = 0.150
-let pupilRadiusRatio: CGFloat = 0.068
-let highlightRadiusRatio: CGFloat = 0.042
+let cornerRadiusRatio: CGFloat = 0.2237   // Apple's rounded-rect proportion
 
-let backgroundTop = CGColor(red: 0.180, green: 0.196, blue: 0.235, alpha: 1)
-let backgroundBottom = CGColor(red: 0.055, green: 0.063, blue: 0.086, alpha: 1)
-let scleraColor = CGColor(red: 0.949, green: 0.961, blue: 0.980, alpha: 1)
-let irisColor = CGColor(red: 0.180, green: 0.435, blue: 0.557, alpha: 1)
-let irisRimColor = CGColor(red: 0.098, green: 0.255, blue: 0.345, alpha: 1)
-let pupilColor = CGColor(red: 0.035, green: 0.047, blue: 0.067, alpha: 1)
-let highlightColor = CGColor(red: 1, green: 1, blue: 1, alpha: 0.92)
+let eyeOffsetX: CGFloat  = 0.176          // each eye's centre, from the middle
+let eyeHalfW: CGFloat    = 0.156
+let eyeHalfH: CGFloat    = 0.188
+let irisRadius: CGFloat  = 0.077
+let irisShiftX: CGFloat  = -0.020         // both pupils drift left, as 👀 does
+let glintRadius: CGFloat = 0.024
+
+let backgroundTop    = CGColor(red: 0.180, green: 0.196, blue: 0.235, alpha: 1)
+let backgroundBottom = CGColor(red: 0.051, green: 0.059, blue: 0.082, alpha: 1)
+let scleraColor      = CGColor(red: 0.988, green: 0.992, blue: 0.996, alpha: 1)
+let irisColor        = CGColor(red: 0.075, green: 0.149, blue: 0.196, alpha: 1)
+let glintColor       = CGColor(red: 1, green: 1, blue: 1, alpha: 0.95)
 
 // MARK: - Drawing
 
-func drawIcon(size: CGFloat) -> CGImage? {
-    let pixels = Int(size)
+func drawIcon(size S: CGFloat) -> CGImage? {
+    let px = Int(S)
     guard let ctx = CGContext(
-        data: nil, width: pixels, height: pixels,
+        data: nil, width: px, height: px,
         bitsPerComponent: 8, bytesPerRow: 0,
         space: CGColorSpaceCreateDeviceRGB(),
         bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
@@ -43,17 +44,15 @@ func drawIcon(size: CGFloat) -> CGImage? {
     ctx.interpolationQuality = .high
     ctx.setAllowsAntialiasing(true)
 
-    // Rounded-rect background with a vertical gradient. macOS does not mask app
-    // icons, so the shape has to be part of the artwork.
-    let rect = CGRect(x: 0, y: 0, width: size, height: size)
-    let bgPath = CGPath(
-        roundedRect: rect,
-        cornerWidth: size * cornerRadiusRatio,
-        cornerHeight: size * cornerRadiusRatio,
-        transform: nil
-    )
+    // Rounded-rect ground. macOS does not mask app icons, so the shape is art.
+    let rect = CGRect(x: 0, y: 0, width: S, height: S)
     ctx.saveGState()
-    ctx.addPath(bgPath)
+    ctx.addPath(CGPath(
+        roundedRect: rect,
+        cornerWidth: S * cornerRadiusRatio,
+        cornerHeight: S * cornerRadiusRatio,
+        transform: nil
+    ))
     ctx.clip()
     if let gradient = CGGradient(
         colorsSpace: CGColorSpaceCreateDeviceRGB(),
@@ -62,73 +61,41 @@ func drawIcon(size: CGFloat) -> CGImage? {
     ) {
         ctx.drawLinearGradient(
             gradient,
-            start: CGPoint(x: 0, y: size),
+            start: CGPoint(x: 0, y: S),
             end: CGPoint(x: 0, y: 0),
             options: []
         )
     }
     ctx.restoreGState()
 
-    // Almond eye: two quadratic curves meeting at the inner and outer corners.
-    let center = CGPoint(x: size / 2, y: size / 2)
-    let halfWidth = size * eyeHalfWidthRatio
-    let curve = size * eyeCurveRatio
-    let left = CGPoint(x: center.x - halfWidth, y: center.y)
-    let right = CGPoint(x: center.x + halfWidth, y: center.y)
+    // A pair of eyes, drawn as simply as possible so they survive 16pt.
+    let cy = S * 0.5
+    for sign in [CGFloat(-1), CGFloat(1)] {
+        let cx = S * 0.5 + sign * S * eyeOffsetX
 
-    let eyePath = CGMutablePath()
-    eyePath.move(to: left)
-    eyePath.addQuadCurve(to: right, control: CGPoint(x: center.x, y: center.y + curve))
-    eyePath.addQuadCurve(to: left, control: CGPoint(x: center.x, y: center.y - curve))
-    eyePath.closeSubpath()
+        ctx.setFillColor(scleraColor)
+        ctx.fillEllipse(in: CGRect(
+            x: cx - S * eyeHalfW, y: cy - S * eyeHalfH,
+            width: S * eyeHalfW * 2, height: S * eyeHalfH * 2
+        ))
 
-    ctx.saveGState()
-    ctx.addPath(eyePath)
-    ctx.setFillColor(scleraColor)
-    ctx.fillPath()
+        let ix = cx + S * irisShiftX
+        ctx.setFillColor(irisColor)
+        ctx.fillEllipse(in: CGRect(
+            x: ix - S * irisRadius, y: cy - S * irisRadius,
+            width: S * irisRadius * 2, height: S * irisRadius * 2
+        ))
 
-    // Iris and pupil are clipped to the eye so they never spill past the lids.
-    ctx.addPath(eyePath)
-    ctx.clip()
-
-    let irisRadius = size * irisRadiusRatio
-    ctx.setFillColor(irisColor)
-    ctx.fillEllipse(in: CGRect(
-        x: center.x - irisRadius, y: center.y - irisRadius,
-        width: irisRadius * 2, height: irisRadius * 2
-    ))
-
-    ctx.setStrokeColor(irisRimColor)
-    ctx.setLineWidth(max(size * 0.012, 1))
-    ctx.strokeEllipse(in: CGRect(
-        x: center.x - irisRadius, y: center.y - irisRadius,
-        width: irisRadius * 2, height: irisRadius * 2
-    ))
-
-    let pupilRadius = size * pupilRadiusRatio
-    ctx.setFillColor(pupilColor)
-    ctx.fillEllipse(in: CGRect(
-        x: center.x - pupilRadius, y: center.y - pupilRadius,
-        width: pupilRadius * 2, height: pupilRadius * 2
-    ))
-
-    let highlightRadius = size * highlightRadiusRatio
-    let highlightCenter = CGPoint(
-        x: center.x - irisRadius * 0.42,
-        y: center.y + irisRadius * 0.42
-    )
-    ctx.setFillColor(highlightColor)
-    ctx.fillEllipse(in: CGRect(
-        x: highlightCenter.x - highlightRadius, y: highlightCenter.y - highlightRadius,
-        width: highlightRadius * 2, height: highlightRadius * 2
-    ))
-    ctx.restoreGState()
-
-    // Crisp lid outline so the shape holds together at 16pt.
-    ctx.addPath(eyePath)
-    ctx.setStrokeColor(CGColor(red: 0.02, green: 0.03, blue: 0.05, alpha: 0.55))
-    ctx.setLineWidth(max(size * 0.008, 0.75))
-    ctx.strokePath()
+        // Skip the catchlight on the smallest sizes — it just turns to mush.
+        if S >= 64 {
+            ctx.setFillColor(glintColor)
+            ctx.fillEllipse(in: CGRect(
+                x: ix - S * irisRadius * 0.40 - S * glintRadius,
+                y: cy + S * irisRadius * 0.34 - S * glintRadius,
+                width: S * glintRadius * 2, height: S * glintRadius * 2
+            ))
+        }
+    }
 
     return ctx.makeImage()
 }
@@ -145,7 +112,6 @@ func write(_ image: CGImage, to url: URL) throws {
 
 // MARK: - Emit every size the asset catalog declares
 
-// (pixel size, filename)
 let outputs: [(CGFloat, String)] = [
     (16,   "icon_16x16.png"),
     (32,   "icon_16x16@2x.png"),

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>LookNice — look at yourself while looking like you're looking at them</title>
-<meta name="description" content="A tiny Mac app that parks a mirror of your webcam under the lens, so glancing at yourself lands your eyeline on the camera. Free.">
+<meta name="description" content="A tiny free Mac app that parks a mirror of your webcam under the lens, so glancing at yourself lands your eyeline on the camera.">
 
 <meta property="og:title" content="LookNice">
 <meta property="og:description" content="Look at yourself while looking like you're looking at them.">
@@ -16,20 +16,19 @@
 
 <style>
   :root {
-    --paper:  #F5F8F9;
-    --ink:    #11161A;
-    --ink-2:  #5A666F;
-    --ink-3:  #8E99A2;
-    --rule:   #DCE4E8;
-    --iris:   #2E6F8E;
-    --iris-2: #7CC0DE;
-    --disp:   "Bricolage Grotesque", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    --mono:   "DM Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    --paper: #E8EEF2;
+    --ink:   #0F1519;
+    --ink-2: #55636D;
+    --ink-3: #8996A1;
+    --iris:  #16323F;
+    --link:  #2E6F8E;
+    --disp:  "Bricolage Grotesque", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --mono:  "DM Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
   }
 
   * { box-sizing: border-box; }
 
-  html { scroll-behavior: smooth; }
+  html, body { height: 100%; }
 
   body {
     margin: 0;
@@ -39,176 +38,110 @@
     font-size: 16px;
     line-height: 1.55;
     -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
   }
 
-  a { color: var(--iris); }
-  a:focus-visible { outline: 2px solid var(--iris); outline-offset: 3px; border-radius: 3px; }
+  a { color: var(--link); }
+  a:focus-visible { outline: 2px solid var(--link); outline-offset: 3px; border-radius: 4px; }
 
-  .wrap { max-width: 980px; margin: 0 auto; padding-inline: 28px; }
+  /* The eyes own the right half and bleed off the edge. */
+  #eyes {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 52vw;
+    height: 100%;
+    display: block;
+    z-index: 0;
+    pointer-events: none;
+  }
 
-  /* ---- The wall of eyes ---- */
-  .stage {
+  .page {
     position: relative;
-    background: var(--ink);
-    height: min(56vh, 460px);
-    min-height: 300px;
-    overflow: hidden;
+    z-index: 1;
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 34px;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 72px 40px;
   }
-  /* A canvas has intrinsic dimensions from its width/height attributes, which
-     `inset: 0` alone will not override — without these it displays at buffer
-     size and you see one corner of the scene. */
-  #eyes { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
+  .col { max-width: 30ch; display: flex; flex-direction: column; gap: 30px; align-items: flex-start; }
 
   .mark {
-    position: absolute;
-    top: 22px; left: 28px;
-    z-index: 2;
     display: flex; align-items: center; gap: 9px;
     font-family: var(--mono);
-    font-size: 13px;
-    letter-spacing: 0.1em;
-    color: #EAF0F3;
+    font-size: 12.5px;
+    letter-spacing: 0.14em;
     text-transform: uppercase;
+    color: var(--ink-2);
   }
-  .mark .brow { font-size: 17px; line-height: 1; }
+  .mark span { font-size: 16px; line-height: 1; }
 
-  .watching {
-    position: absolute;
-    bottom: 18px; right: 28px;
-    z-index: 2;
-    font-family: var(--mono);
-    font-size: 11px;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: #63727C;
-  }
+  h1 { margin: 0; font-weight: 800; letter-spacing: -0.032em; line-height: 0.93; }
+  h1 .a { display: block; font-size: clamp(40px, 6.6vw, 82px); }
+  h1 .b { display: block; font-size: clamp(27px, 4.3vw, 53px); color: var(--ink-2); letter-spacing: -0.024em; }
+  h1 .c { display: block; font-size: clamp(20px, 2.9vw, 36px); color: var(--ink-3); letter-spacing: -0.018em; }
 
-  /* ---- Eye chart ---- */
-  .chart { padding-block: clamp(44px, 7vw, 76px) clamp(28px, 4vw, 44px); }
-  .chart .line { display: block; font-weight: 800; letter-spacing: -0.03em; line-height: 0.94; text-wrap: balance; }
-  .l1 { font-size: clamp(38px, 9.4vw, 96px); }
-  .l2 { font-size: clamp(26px, 6.1vw, 62px); color: var(--ink-2); letter-spacing: -0.02em; }
-  .l3 { font-size: clamp(19px, 4.1vw, 42px); color: var(--ink-3); letter-spacing: -0.015em; }
+  .what { margin: 0; font-size: clamp(16.5px, 1.6vw, 18.5px); color: var(--ink-2); max-width: 34ch; }
 
-  .acuity {
-    display: flex; align-items: baseline; gap: 12px;
-    font-family: var(--mono); font-size: 11px;
-    letter-spacing: 0.14em; text-transform: uppercase;
-    color: var(--ink-3);
-    margin-bottom: 20px;
-  }
-  .acuity i { display: block; width: 26px; height: 1px; background: var(--iris); font-style: normal; }
-
-  /* ---- Pitch + download ---- */
-  .pitch { padding-bottom: clamp(36px, 5vw, 56px); display: flex; flex-direction: column; gap: 26px; align-items: flex-start; }
-  .pitch p { margin: 0; font-size: clamp(17px, 2.1vw, 20px); color: var(--ink-2); max-width: 54ch; }
-  .pitch p b { color: var(--ink); font-weight: 500; }
-
-  .get { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
   .dl {
     display: inline-flex; align-items: center; gap: 11px;
     background: var(--ink); color: var(--paper);
-    padding: 15px 28px; border-radius: 999px;
-    font-weight: 700; font-size: 16px; text-decoration: none;
-    min-height: 50px;
+    padding: 15px 30px; border-radius: 999px;
+    font-weight: 700; font-size: 16.5px; text-decoration: none;
+    min-height: 52px;
     transition: transform .14s ease, background .14s ease;
   }
-  .dl:hover { background: var(--iris); color: #fff; transform: translateY(-1px); }
+  .dl:hover { background: var(--link); color: #fff; transform: translateY(-1px); }
   .dl:active { transform: translateY(0); }
-  .meta { font-family: var(--mono); font-size: 12px; color: var(--ink-3); letter-spacing: 0.03em; }
 
-  /* ---- Install note ---- */
-  .note {
-    border-top: 1px solid var(--rule);
-    padding-block: 28px 0;
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 26px 48px;
+  .meta {
+    font-family: var(--mono); font-size: 12px; color: var(--ink-3);
+    display: flex; flex-direction: column; gap: 4px;
+    margin-top: -18px;
   }
-  .note h3 {
-    margin: 0 0 6px;
-    font-family: var(--mono); font-size: 11px;
-    letter-spacing: 0.14em; text-transform: uppercase;
-    color: var(--iris); font-weight: 500;
-  }
-  .note p { margin: 0; font-size: 15px; color: var(--ink-2); }
+  .meta a { color: var(--ink-3); }
 
-  footer { padding-block: 40px 56px; }
-  .foot {
-    border-top: 1px solid var(--rule);
-    padding-top: 22px;
-    display: flex; justify-content: space-between; gap: 18px; flex-wrap: wrap;
-    font-family: var(--mono); font-size: 11.5px; color: var(--ink-3);
-  }
-  .foot a { color: var(--ink-3); }
-
-  @media (max-width: 640px) {
-    .wrap { padding-inline: 20px; }
-    .note { grid-template-columns: minmax(0, 1fr); }
+  @media (max-width: 860px) {
+    #eyes { position: absolute; width: 100%; height: 42vh; top: 0; right: 0; }
+    .page { justify-content: flex-start; padding: calc(42vh + 28px) 24px 56px; gap: 28px; }
+    .col { max-width: none; }
     .dl { width: 100%; justify-content: center; }
-    .get { width: 100%; }
-    .meta { width: 100%; }
   }
 </style>
 </head>
 <body>
 
-<section class="stage">
-  <div class="mark"><span class="brow">👀</span> LookNice</div>
-  <canvas id="eyes"></canvas>
-  <div class="watching">they are watching the cursor</div>
-</section>
+<canvas id="eyes"></canvas>
 
-<main class="wrap">
+<main class="page">
+  <div class="col">
+    <p class="mark"><span>👀</span> LookNice</p>
 
-  <div class="chart">
-    <p class="acuity"><i></i> Fig. 1 — visual acuity, yours</p>
-    <span class="line l1">LOOK AT YOURSELF</span>
-    <span class="line l2">while looking like you're</span>
-    <span class="line l3">looking at them</span>
+    <h1>
+      <span class="a">LOOK AT YOURSELF</span>
+      <span class="b">while looking like you're</span>
+      <span class="c">looking at them</span>
+    </h1>
+
+    <p class="what">A tiny mirror of your webcam, parked right under the lens. Your eyes go to it — which happens to be exactly where the camera is.</p>
+
+    <a class="dl" href="LookNice.dmg" download>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M12 3v13"/><path d="M6 12l6 6 6-6"/><path d="M4 21h16"/>
+      </svg>
+      Download for Mac
+    </a>
+
+    <p class="meta">
+      <span>Free · macOS 12+ · Under 1 MB</span>
+      <span><a href="privacy.html">Privacy</a> · © 2026 BobCo.</span>
+    </p>
   </div>
-
-  <div class="pitch">
-    <p>LookNice parks a small mirror of your webcam directly under the lens. Your eyes go to it, because your eyes always go to it. <b>It just happens to be exactly where the camera is.</b></p>
-
-    <div class="get">
-      <a class="dl" href="LookNice.dmg" download>
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M12 3v13"/><path d="M6 12l6 6 6-6"/><path d="M4 21h16"/>
-        </svg>
-        Download for macOS
-      </a>
-      <span class="meta">Free · Under 1&nbsp;MB · macOS 12+</span>
-    </div>
-  </div>
-
-  <div class="note">
-    <div>
-      <h3>Installing</h3>
-      <p>Open the download and drag LookNice onto the Applications folder. It lives in your menu bar — there's no Dock icon, so look up and to the right.</p>
-    </div>
-    <div>
-      <h3>The first-open ritual</h3>
-      <p>macOS hasn't been introduced to this app yet, so it will act suspicious. Right-click LookNice in Applications, choose Open, then Open again. Once only, then never again.</p>
-    </div>
-    <div>
-      <h3>It sees nothing</h3>
-      <p>No network access at all — not switched off, not there. Camera frames go to your screen and nowhere else. No account, no analytics, nothing leaves the machine.</p>
-    </div>
-    <div>
-      <h3>Invisible on calls</h3>
-      <p>The mirror is excluded from screen capture. Share your screen and it isn't in the picture, which rather spoils the trick otherwise.</p>
-    </div>
-  </div>
-
 </main>
-
-<footer class="wrap">
-  <div class="foot">
-    <span>© 2026 BobCo.</span>
-    <a href="privacy.html">Privacy</a>
-  </div>
-</footer>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
@@ -216,149 +149,135 @@
   var canvas = document.getElementById('eyes');
   if (!canvas || typeof THREE === 'undefined') return;
 
-  var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
   var scene = new THREE.Scene();
-  // Orthographic on purpose. A wide banner through a perspective lens gives a
-  // horizontal FOV near 125deg, which stretches the eyeballs at the edges into
-  // eggs. Size variation carries the depth instead.
-  var VIEW_H = 11;
+  // Orthographic: a perspective lens this wide stretches spheres near the
+  // edges into eggs, and these need to stay round to read as 👀.
+  // Half-extents of the pair, used to frame it at any aspect. Slightly under
+  // the true width so the outer edges bleed a little past the frame.
+  var PAIR_W = 5.3, PAIR_H = 3.0;
   var camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 200);
   camera.position.set(0, 0, 40);
 
   var renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 
-  scene.add(new THREE.AmbientLight(0xffffff, 0.72));
-  var key = new THREE.DirectionalLight(0xffffff, 0.75);
-  key.position.set(-4, 6, 10);
+  scene.add(new THREE.AmbientLight(0xffffff, 0.78));
+  var key = new THREE.DirectionalLight(0xffffff, 0.62);
+  key.position.set(-5, 7, 10);
   scene.add(key);
-  var rim = new THREE.DirectionalLight(0x7cc0de, 0.35);
-  rim.position.set(6, -4, 4);
-  scene.add(rim);
+  var fill = new THREE.DirectionalLight(0xbcd4e2, 0.4);
+  fill.position.set(7, -5, 6);
+  scene.add(fill);
 
-  // Shared geometry/materials — one set for every eye.
-  //
   // Iris and pupil are spherical CAPS, not flat discs: a disc sized to fit the
-  // eyeball ends up buried inside an opaque sphere, and one sized to clear it
-  // floats off the surface. Caps at a slightly larger radius sit on the sclera
-  // and follow its curvature. They're built around +Y, so rotate them to +Z.
-  var gSclera = new THREE.SphereGeometry(1, 44, 32);
+  // eyeball hides inside it, and one sized to clear it floats off the surface.
+  // Built around +Y, so rotated to face +Z.
+  var gSclera = new THREE.SphereGeometry(1, 64, 48);
 
-  var gIris = new THREE.SphereGeometry(1.005, 44, 20, 0, Math.PI * 2, 0, 0.44);
+  var gIris = new THREE.SphereGeometry(1.004, 64, 28, 0, Math.PI * 2, 0, 0.56);
   gIris.rotateX(Math.PI / 2);
 
-  var gPupil = new THREE.SphereGeometry(1.012, 36, 16, 0, Math.PI * 2, 0, 0.19);
-  gPupil.rotateX(Math.PI / 2);
+  var gGlint = new THREE.SphereGeometry(0.115, 20, 20);
 
-  var gGlint = new THREE.SphereGeometry(0.085, 16, 16);
-
-  var mSclera = new THREE.MeshStandardMaterial({ color: 0xfbfcfa, roughness: 0.36, metalness: 0.0 });
-  var mIris   = new THREE.MeshStandardMaterial({ color: 0x2e6f8e, roughness: 0.25, metalness: 0.05 });
-  var mPupil  = new THREE.MeshBasicMaterial({ color: 0x080c0f });
+  var mSclera = new THREE.MeshStandardMaterial({ color: 0xfdfefe, roughness: 0.30, metalness: 0.0 });
+  var mIris   = new THREE.MeshStandardMaterial({ color: 0x16323f, roughness: 0.22, metalness: 0.08 });
   var mGlint  = new THREE.MeshBasicMaterial({ color: 0xffffff });
 
   function makeEye(scale) {
     var g = new THREE.Group();
-    g.add(new THREE.Mesh(gSclera, mSclera));
-    g.add(new THREE.Mesh(gIris, mIris));
-    g.add(new THREE.Mesh(gPupil, mPupil));
 
-    // Half-buried in the sclera, up and to the left, so it reads as a catchlight.
+    // Slightly taller than wide, like the emoji.
+    var sclera = new THREE.Mesh(gSclera, mSclera);
+    sclera.scale.set(0.88, 1, 0.88);
+    g.add(sclera);
+
+    g.add(new THREE.Mesh(gIris, mIris));
+
     var glint = new THREE.Mesh(gGlint, mGlint);
-    glint.position.set(-0.30, 0.30, 0.90);
+    glint.position.set(-0.21, 0.25, 0.94);
     g.add(glint);
 
     g.scale.setScalar(scale);
     return g;
   }
 
-  // Loose grid with jitter, so it reads as a crowd rather than a spreadsheet.
-  // Wider than the frame on purpose — eyes cropped at the edges read as a wall
-  // that carries on past the screen.
-  var eyes = [];
-  var COLS = 10, ROWS = 4, SPAN = 40, RISE = 8.6;
-  for (var r = 0; r < ROWS; r++) {
-    for (var c = 0; c < COLS; c++) {
-      var scale = 0.6 + Math.random() * 0.52;
-      var eye = makeEye(scale);
-      eye.position.set(
-        -SPAN / 2 + (SPAN / (COLS - 1)) * c + (Math.random() - 0.5) * 1.8,
-        -RISE / 2 + (RISE / (ROWS - 1)) * r + (Math.random() - 0.5) * 1.1,
-        (Math.random() - 0.5) * 2.6
-      );
-      eye.userData.nextBlink = performance.now() + 1200 + Math.random() * 7000;
-      eye.userData.blinkStart = -1;
-      eye.userData.baseScale = scale;
-      scene.add(eye);
-      eyes.push(eye);
-    }
-  }
+  // One pair. The emoji has a slightly smaller left eye, so keep that.
+  var pair = new THREE.Group();
+  var left  = makeEye(2.55);
+  var right = makeEye(2.78);
+  left.position.set(-2.75, 0.18, 0);
+  right.position.set(2.75, 0, 0.3);
+  pair.add(left, right);
+  scene.add(pair);
+  var eyes = [left, right];
 
-  // Pointer target, in world space, smoothed.
-  var want = new THREE.Vector3(0, 0, 22);
-  var look = new THREE.Vector3(0, 0, 22);
+  var want = new THREE.Vector3(0, 0, 26);
+  var look = new THREE.Vector3(0, 0, 26);
   var pointerSeen = false;
 
   function aim(clientX, clientY) {
     var r = canvas.getBoundingClientRect();
     var nx = ((clientX - r.left) / r.width) * 2 - 1;
     var ny = -(((clientY - r.top) / r.height) * 2 - 1);
-    want.set(nx * 20, ny * 9, 22);
+    want.set(nx * 13, ny * 8, 26);
     pointerSeen = true;
   }
-
+  // Listen on the window, not the canvas — it's pointer-events: none so the
+  // copy beneath it stays selectable.
   window.addEventListener('pointermove', function (e) { aim(e.clientX, e.clientY); }, { passive: true });
   window.addEventListener('pointerdown', function (e) { aim(e.clientX, e.clientY); }, { passive: true });
 
   function resize() {
-    var box = canvas.parentElement.getBoundingClientRect();
-    var w = Math.round(box.width);
-    var h = Math.round(box.height);
+    var r = canvas.getBoundingClientRect();
+    var w = Math.round(r.width), h = Math.round(r.height);
     if (!w || !h) return;
     renderer.setSize(w, h, false);
-    // Show a taller slice on narrow screens so the wall still reads as a crowd.
-    var viewH = w < 700 ? 15 : VIEW_H;
-    var halfH = viewH / 2;
-    var halfW = halfH * (w / h);
-    camera.left = -halfW;
-    camera.right = halfW;
-    camera.top = halfH;
-    camera.bottom = -halfH;
+    // Frame the pair whichever way the canvas is shaped — tall and narrow
+    // beside the copy on desktop, short and wide above it on a phone.
+    var aspect = w / h;
+    var halfH = Math.max(PAIR_H, PAIR_W / aspect) * 1.06;
+    var halfW = halfH * aspect;
+    camera.left = -halfW; camera.right = halfW;
+    camera.top = halfH;   camera.bottom = -halfH;
     camera.updateProjectionMatrix();
   }
   window.addEventListener('resize', resize);
-  // Fonts and layout can settle after first paint, so measure again.
-  if (window.ResizeObserver) new ResizeObserver(resize).observe(canvas.parentElement);
+  if (window.ResizeObserver) new ResizeObserver(resize).observe(canvas);
   requestAnimationFrame(resize);
   resize();
 
-  var BLINK = 150;
+  var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var BLINK = 155;
+  eyes.forEach(function (e) {
+    e.userData.base = e.scale.x;
+    e.userData.next = performance.now() + 2000 + Math.random() * 4000;
+    e.userData.start = -1;
+  });
 
   function frame(t) {
-    // With no pointer (touch, or before the first move) drift on a slow figure.
+    // Before the pointer shows up (and on touch) drift on a slow figure.
     if (!pointerSeen) {
-      want.set(Math.sin(t / 2600) * 14, Math.cos(t / 3400) * 6, 22);
+      want.set(Math.sin(t / 3000) * 9, Math.cos(t / 4200) * 5, 26);
     }
-    look.lerp(want, 0.12);
+    look.lerp(want, 0.10);
 
     for (var i = 0; i < eyes.length; i++) {
-      var eye = eyes[i];
-      eye.lookAt(look);
+      var e = eyes[i];
+      e.lookAt(look);
 
       if (!reduced) {
-        var d = eye.userData;
-        if (d.blinkStart < 0 && t >= d.nextBlink) d.blinkStart = t;
-        if (d.blinkStart >= 0) {
-          var p = (t - d.blinkStart) / BLINK;
+        var d = e.userData;
+        if (d.start < 0 && t >= d.next) d.start = t;
+        if (d.start >= 0) {
+          var p = (t - d.start) / BLINK;
           if (p >= 1) {
-            eye.scale.setScalar(d.baseScale);
-            d.blinkStart = -1;
-            d.nextBlink = t + 2200 + Math.random() * 8000;
+            e.scale.setScalar(d.base);
+            d.start = -1;
+            // Blink together, roughly, the way a real pair does.
+            d.next = t + 2600 + Math.random() * 4200;
           } else {
-            // Down and back up: a squash, which reads as a blink at this size.
-            var squash = 1 - Math.sin(p * Math.PI) * 0.92;
-            eye.scale.set(d.baseScale, d.baseScale * squash, d.baseScale);
+            var squash = 1 - Math.sin(p * Math.PI) * 0.93;
+            e.scale.set(d.base, d.base * squash, d.base);
           }
         }
       }

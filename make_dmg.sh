@@ -4,35 +4,86 @@
 #
 #   ./make_dmg.sh
 #
-# NOTE ON GATEKEEPER: this image is code-signed but NOT notarized, so on a
-# machine other than this one macOS will refuse to open it on a double-click
-# ("Apple could not verify this app is free from malware"). Recipients have to
-# right-click the app and choose Open, once. Notarizing removes that; it needs
-# a Developer ID certificate and an app-specific password.
+# Signs with Developer ID, then notarizes with Apple and staples the ticket, so
+# the app opens on a first double-click with no "unverified developer" wall.
+#
+# ONE-TIME SETUP for notarization (needs an app-specific password from
+# appleid.apple.com — Sign-In and Security > App-Specific Passwords):
+#
+#   xcrun notarytool store-credentials "looknice-notary" \
+#       --apple-id "bobbystrobeck@gmail.com" --team-id YTLXVW7AA5
+#
+# It prompts for the password and saves it to your keychain; this script never
+# sees it. Without that profile the script still builds a signed DMG, it just
+# skips notarization and says so.
 
 set -euo pipefail
 cd "$(dirname "$0")"
 
 APP_NAME="LookNice"
 VOL_NAME="LookNice"
+TEAM_ID="YTLXVW7AA5"
+NOTARY_PROFILE="looknice-notary"
+
+ARCHIVE="build/${APP_NAME}.xcarchive"
+EXPORT="build/export-developer-id"
+APP="${EXPORT}/${APP_NAME}.app"
 STAGE="build/dmg-stage"
 RW_DMG="build/rw.dmg"
 OUT_DMG="build/${APP_NAME}.dmg"
 
-echo "==> Building the app"
+mkdir -p build
+
+echo "==> Archiving"
+rm -rf "$ARCHIVE" "$EXPORT"
 xcodebuild -project "${APP_NAME}.xcodeproj" \
     -scheme "${APP_NAME}" \
     -configuration Release \
-    -destination 'platform=macOS' \
+    -destination 'generic/platform=macOS' \
+    -archivePath "$ARCHIVE" \
     -allowProvisioningUpdates \
-    build > /dev/null
+    archive > /dev/null
 
-BUILT=$(xcodebuild -project "${APP_NAME}.xcodeproj" -scheme "${APP_NAME}" \
-    -configuration Release -showBuildSettings 2>/dev/null \
-    | grep -m1 "BUILT_PRODUCTS_DIR" | sed 's/.*= //')
-APP="${BUILT}/${APP_NAME}.app"
+echo "==> Exporting, signed with Developer ID"
+xcodebuild -exportArchive \
+    -archivePath "$ARCHIVE" \
+    -exportOptionsPlist ExportOptions-DeveloperID.plist \
+    -exportPath "$EXPORT" \
+    -allowProvisioningUpdates > /dev/null
 [ -d "$APP" ] || { echo "No app at $APP"; exit 1; }
 
+codesign -dv --verbose=2 "$APP" 2>&1 | grep -E "^Authority=Developer ID" \
+    || { echo "Not signed with Developer ID — cannot notarize."; exit 1; }
+
+# ---- Notarize the app itself -------------------------------------------------
+# Stapling the ticket to the .app (rather than only to the .dmg) means the app
+# stays verified even after someone drags it out of the image.
+if xcrun notarytool history --keychain-profile "$NOTARY_PROFILE" >/dev/null 2>&1; then
+    echo "==> Notarizing (a few minutes; Apple's queue decides)"
+    ZIP="build/${APP_NAME}-notarize.zip"
+    rm -f "$ZIP"
+    /usr/bin/ditto -c -k --keepParent "$APP" "$ZIP"
+
+    if xcrun notarytool submit "$ZIP" --keychain-profile "$NOTARY_PROFILE" --wait; then
+        xcrun stapler staple "$APP"
+        echo "    ticket stapled to the app"
+        NOTARIZED=1
+    else
+        echo "    NOTARIZATION FAILED — see the log above."
+        echo "    Run: xcrun notarytool log <submission-id> --keychain-profile $NOTARY_PROFILE"
+        NOTARIZED=0
+    fi
+    rm -f "$ZIP"
+else
+    echo "==> Skipping notarization: no keychain profile '$NOTARY_PROFILE'."
+    echo "    Set it up once with:"
+    echo "      xcrun notarytool store-credentials \"$NOTARY_PROFILE\" \\"
+    echo "          --apple-id \"bobbystrobeck@gmail.com\" --team-id $TEAM_ID"
+    echo "    Until then the app is signed but users will hit Gatekeeper."
+    NOTARIZED=0
+fi
+
+# ---- Build the disk image ----------------------------------------------------
 echo "==> Drawing the window background"
 swift Tools/make_dmg_bg.swift > /dev/null
 
@@ -51,9 +102,8 @@ MOUNT="/Volumes/${VOL_NAME}"
 hdiutil detach "$MOUNT" >/dev/null 2>&1 || true
 hdiutil attach "$RW_DMG" -mountpoint "$MOUNT" -nobrowse > /dev/null
 
-# Finder has to be scripted to place the icons and apply the background.
-# If automation permission is refused the image still works — it just opens
-# as a plain list of two items — so a failure here is a warning, not fatal.
+# Finder places the icons and applies the background. If automation permission
+# is refused the image still installs fine, it just isn't styled.
 echo "==> Arranging the window"
 if osascript <<EOF >/dev/null 2>&1
 tell application "Finder"
@@ -81,7 +131,6 @@ then
   echo "    window arranged"
 else
   echo "    WARNING: could not script Finder (automation permission?)."
-  echo "    The image still installs correctly, it just won't be styled."
 fi
 
 sync
@@ -92,6 +141,20 @@ hdiutil convert "$RW_DMG" -format UDZO -imagekey zlib-level=9 -o "$OUT_DMG" > /d
 rm -f "$RW_DMG"
 rm -rf "$STAGE"
 
+# Notarizing the image as well covers the download itself, not just the app
+# inside it, so mounting a freshly downloaded DMG is silent too.
+if [ "$NOTARIZED" = "1" ]; then
+    echo "==> Notarizing the disk image"
+    if xcrun notarytool submit "$OUT_DMG" --keychain-profile "$NOTARY_PROFILE" --wait; then
+        xcrun stapler staple "$OUT_DMG"
+        echo "    ticket stapled to the image"
+    else
+        echo "    Image notarization failed; the app inside is still stapled."
+    fi
+fi
+
 echo ""
 echo "==> $OUT_DMG"
 ls -lh "$OUT_DMG" | awk '{print "    " $5}'
+echo "==> Gatekeeper verdict:"
+spctl -a -vvv -t install "$OUT_DMG" 2>&1 | sed 's/^/    /' || true

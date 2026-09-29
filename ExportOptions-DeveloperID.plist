@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Direct distribution from a website. Signs with a Developer ID
+         Application certificate, which is what notarization requires and what
+         lets Gatekeeper open the app without the "unverified developer" wall.
+         (ExportOptions.plist alongside this one is the Mac App Store variant.) -->
+    <key>method</key>
+    <string>developer-id</string>
+
+    <key>teamID</key>
+    <string>YTLXVW7AA5</string>
+
+    <key>signingStyle</key>
+    <string>automatic</string>
+
+    <!-- Notarization happens against the finished .dmg in make_dmg.sh, not
+         here, so the export itself just needs to be signed. -->
+    <key>destination</key>
+    <string>export</string>
+</dict>
+</plist>

@@ -29,7 +29,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         if let button = statusItem.button {
-            button.image = NSImage(systemSymbolName: "eye.circle", accessibilityDescription: "Narcissus")
+            // "eyes" is the 👀 glyph and matches the app icon, but it only
+            // exists on macOS 13+; fall back to a single eye on Monterey.
+            button.image = NSImage(systemSymbolName: "eyes", accessibilityDescription: "LookNice")
+                ?? NSImage(systemSymbolName: "eye.fill", accessibilityDescription: "LookNice")
         }
         statusItem.menu = buildMenu()
 
