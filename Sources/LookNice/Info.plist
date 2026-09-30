@@ -11,9 +11,9 @@
     <key>CFBundleIdentifier</key>
     <string>com.bobbystrobeck.looknice</string>
     <key>CFBundleVersion</key>
-    <string>2</string>
+    <string>3</string>
     <key>CFBundleShortVersionString</key>
-    <string>1.5</string>
+    <string>1.5.1</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <!-- No space: keeps the binary name identical between the SwiftPM dev
