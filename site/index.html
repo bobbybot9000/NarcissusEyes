@@ -44,9 +44,13 @@
   a { color: var(--link); }
   a:focus-visible { outline: 2px solid var(--link); outline-offset: 3px; border-radius: 4px; }
 
+  /* The hero is its own stacking context so the eyes and the sticker scroll
+     away with it instead of hanging over the section below. */
+  .hero { position: relative; min-height: 100vh; }
+
   /* The eyes own the right half and bleed off the edge. */
   #eyes {
-    position: fixed;
+    position: absolute;
     top: 0;
     right: 0;
     width: 52vw;
@@ -59,7 +63,7 @@
   .page {
     position: relative;
     z-index: 1;
-    min-height: 100%;
+    min-height: 100vh;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -73,9 +77,8 @@
   .mark {
     display: flex; align-items: center; gap: 9px;
     font-family: var(--mono);
-    font-size: 12.5px;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
+    font-size: 13px;
+    letter-spacing: 0.06em;
     color: var(--ink-2);
   }
   .mark span { font-size: 16px; line-height: 1; }
@@ -105,16 +108,217 @@
   }
   .meta a { color: var(--ink-3); }
 
+
+  /* Sticker. Sits above the eyes (z 0) and the copy (z 1) so it can overlap
+     the pair without the copy being covered. */
+  .sticker {
+    position: absolute;
+    right: 46vw;
+    top: 7vh;
+    z-index: 2;
+    width: clamp(160px, 15.5vw, 218px);
+    aspect-ratio: 1;
+    display: grid;
+    place-items: center;
+    transform: rotate(8deg);
+    pointer-events: none;
+  }
+  .sticker svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .sticker span {
+    position: relative;
+    display: block;
+    width: 78%;
+    text-align: center;
+    color: #FFF6F1;
+    line-height: 1.12;
+    font-size: clamp(10px, 0.92vw, 12px);
+    font-weight: 500;
+    letter-spacing: 0.005em;
+  }
+  .sticker b {
+    display: block;
+    font-weight: 800;
+    font-size: 1.44em;
+    letter-spacing: -0.02em;
+    margin-top: 2px;
+  }
+  .sticker sup { font-size: 0.5em; vertical-align: super; font-weight: 600; }
+
+
+  /* ---------- Features ---------- */
+
+  .feat {
+    position: relative;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 4vh 40px 15vh;
+    display: grid;
+    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+    gap: clamp(32px, 5vw, 76px);
+    align-items: center;
+  }
+
+  .feat h2 {
+    margin: 0 0 26px;
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--link);
+  }
+
+  .flist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+  .flist button {
+    display: block; width: 100%; text-align: left;
+    font: inherit; color: var(--ink-2);
+    background: none; border: 0; border-left: 2px solid transparent;
+    padding: 13px 0 13px 18px; margin: 0; cursor: pointer;
+    transition: color .28s ease, border-color .28s ease, opacity .28s ease;
+    opacity: 0.55;
+  }
+  .flist button b { display: block; color: var(--ink); font-weight: 700; font-size: 17.5px; letter-spacing: -0.012em; }
+  .flist button i { font-style: normal; font-size: 15px; }
+  .flist li.on button { opacity: 1; border-left-color: var(--iris); }
+  .flist button:hover { opacity: 1; }
+  .flist button:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; border-radius: 3px; }
+
+  /* ---------- Laptop ---------- */
+
+  .demo { display: flex; justify-content: center; }
+  .laptop { width: 100%; max-width: 560px; }
+
+  .lid {
+    position: relative;
+    aspect-ratio: 16 / 10.4;
+    background: linear-gradient(168deg, #39434A, #1B2227);
+    border-radius: 15px;
+    padding: 1.6%;
+    box-shadow: 0 26px 50px -24px rgba(15, 21, 25, 0.5);
+  }
+  .screen {
+    position: relative;
+    width: 100%; height: 100%;
+    background: #10171C;
+    border-radius: 7px;
+    overflow: hidden;
+  }
+  .notch {
+    position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+    width: 25%; height: 5.6%;
+    background: #1B2227;
+    border-radius: 0 0 7px 7px;
+    z-index: 3;
+  }
+  .deck {
+    width: 112%; margin: 0 -6%;
+    height: 14px;
+    background: linear-gradient(#C7D2DA, #93A3AE);
+    border-radius: 0 0 11px 11px;
+    clip-path: polygon(3.5% 0, 96.5% 0, 100% 100%, 0 100%);
+  }
+  .deck::after {
+    content: ""; display: block; width: 13%; height: 34%;
+    margin: 0 auto; border-radius: 0 0 6px 6px;
+    background: rgba(15, 21, 25, 0.22);
+  }
+
+  /* Fake call behind the mirror, kept quiet so it never competes. */
+  .tiles { position: absolute; inset: 9% 6% 15%; display: grid; grid-template-columns: 1fr 1fr; gap: 5%; }
+  .tile { background: #1C262C; border-radius: 6px; position: relative; overflow: hidden; }
+  .tile::after {
+    content: ""; position: absolute; left: 50%; top: 54%; transform: translate(-50%, -50%);
+    width: 34%; aspect-ratio: 1; border-radius: 50%;
+    background: #2C3941;
+  }
+  .tile.talk { box-shadow: inset 0 0 0 2px rgba(46, 111, 142, 0.85); }
+  .bar {
+    position: absolute; left: 50%; bottom: 4.5%; transform: translateX(-50%);
+    width: 42%; height: 7%; border-radius: 999px; background: #222D34;
+    display: flex; align-items: center; justify-content: center; gap: 7%;
+  }
+  .bar i { width: 11%; aspect-ratio: 1; border-radius: 50%; background: #3A4850; }
+  .bar i:last-child { background: #B4463A; }
+
+  /* ---------- The app itself ---------- */
+
+  .mirror {
+    position: absolute; top: 5.0%; left: 50%;
+    transform: translateX(-50%);
+    z-index: 2;
+    width: 21%; height: 32.3%;
+    background: #0C1114;
+    border-radius: 0 0 9px 9px;   /* square top, round bottom — like the app */
+    overflow: hidden;
+    box-shadow: 0 8px 20px -8px rgba(0, 0, 0, 0.6);
+    transition: width .62s cubic-bezier(.22,1,.36,1),
+                height .62s cubic-bezier(.22,1,.36,1),
+                opacity .5s ease;
+  }
+  .mirror.grow { animation: grow .8s cubic-bezier(.22,1,.36,1) both; }
+  @keyframes grow { from { height: 0; opacity: 0; } }
+
+  /* The feed keeps its own 3:4 proportions and is CROPPED by the mirror box.
+     Sizing it with inset:0 instead would squash the face flat the moment the
+     box goes short and wide for eye-only mode. */
+  .feed {
+    position: absolute; left: 50%; top: 50%;
+    width: 100%; aspect-ratio: 3 / 4;
+    transform: translate(-50%, -50%) scale(1.12);
+    transition: transform .62s cubic-bezier(.22,1,.36,1), filter .3s ease;
+  }
+  .mirror.switching .feed { filter: blur(6px); }
+  /* Eyes sit at 40% height; after a 2.4x zoom that lands 10% above centre. */
+  .mirror.eyes .feed { transform: translate(-50%, -50%) scale(2.4) translateY(10%); }
+
+  .head {
+    position: absolute; left: 50%; top: 54%; transform: translate(-50%, -50%);
+    width: 84%; height: 92%;
+    border-radius: 47% 47% 42% 42%;
+    background: linear-gradient(165deg, #9FB0BC, #6E808D);
+  }
+  .feed .eye {
+    position: absolute; top: 40%; width: 13%; height: 8.5%;
+    border-radius: 50%; background: #101A20;
+  }
+  .feed .eye.l { left: 30%; }
+  .feed .eye.r { right: 30%; }
+  .feed .eye::after {
+    content: ""; position: absolute; left: 18%; top: 14%;
+    width: 38%; height: 38%; border-radius: 50%; background: rgba(255,255,255,.85);
+  }
+  .feed .brow {
+    position: absolute; top: 33%; width: 15%; height: 2.6%;
+    border-radius: 99px; background: rgba(16, 26, 32, .6);
+  }
+  .feed .brow.l { left: 29%; }
+  .feed .brow.r { right: 29%; }
+  .feed .mouth {
+    position: absolute; left: 50%; top: 63%; transform: translateX(-50%);
+    width: 20%; height: 4.5%;
+    border-radius: 0 0 99px 99px; background: rgba(16, 26, 32, .45);
+  }
+
+  .caption {
+    margin: 18px auto 0; text-align: center;
+    font-family: var(--mono); font-size: 11.5px; letter-spacing: .04em;
+    color: var(--ink-3);
+  }
+
   @media (max-width: 860px) {
     #eyes { position: absolute; width: 100%; height: 42vh; top: 0; right: 0; }
+    .sticker { position: absolute; width: 132px; right: 5vw; top: calc(42vh - 74px); }
     .page { justify-content: flex-start; padding: calc(42vh + 28px) 24px 56px; gap: 28px; }
     .col { max-width: none; }
     .dl { width: 100%; justify-content: center; }
+    .feat { grid-template-columns: 1fr; padding: 2vh 24px 12vh; gap: 34px; }
+    .demo { order: -1; }
   }
 </style>
 </head>
 <body>
 
+<div class="hero">
 <canvas id="eyes"></canvas>
 
 <main class="page">
@@ -127,7 +331,7 @@
       <span class="c">looking at them</span>
     </h1>
 
-    <p class="what">A tiny mirror of your webcam, parked right under the lens. Your eyes go to it — which happens to be exactly where the camera is.</p>
+    <p class="what">Put your face right by your webcam so you look more engaged while staring at yourself in meetings.</p>
 
     <a class="dl" href="LookNice.dmg" download>
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -142,6 +346,59 @@
     </p>
   </div>
 </main>
+
+<aside class="sticker">
+  <svg viewBox="0 0 200 200" aria-hidden="true">
+    <path d="M100.0,0.0 L112.24,14.88 L128.17,4.05 L135.73,21.77 L154.06,15.87 L156.32,35.01 L175.57,34.51 L172.35,53.5 L190.96,58.46 L182.52,75.77 L198.98,85.77 L186.0,100.0 L198.98,114.23 L182.52,124.23 L190.96,141.54 L172.35,146.5 L175.57,165.49 L156.32,164.99 L154.06,184.13 L135.73,178.23 L128.17,195.95 L112.24,185.12 L100.0,200.0 L87.76,185.12 L71.83,195.95 L64.27,178.23 L45.94,184.13 L43.68,164.99 L24.43,165.49 L27.65,146.5 L9.04,141.54 L17.48,124.23 L1.02,114.23 L14.0,100.0 L1.02,85.77 L17.48,75.77 L9.04,58.46 L27.65,53.5 L24.43,34.51 L43.68,35.01 L45.94,15.87 L64.27,21.77 L71.83,4.05 L87.76,14.88 Z" fill="#E4572E"/>
+  </svg>
+  <span>The meeting tool for<b>Narcissists<sup>&#8482;</sup>!</b></span>
+</aside>
+</div>
+
+<section class="feat" id="features">
+  <div>
+    <h2>Features</h2>
+    <ul class="flist">
+      <li class="on"><button type="button" data-mode="face">
+        <b>Sits right under your webcam.</b>
+        <i>Notch friendly &mdash; it grows out of the notch and hugs the top of the screen.</i>
+      </button></li>
+      <li><button type="button" data-mode="eyes">
+        <b>Eye-only mode.</b>
+        <i>Just the peepers.</i>
+      </button></li>
+      <li><button type="button" data-mode="ghost">
+        <b>Transparent mode.</b>
+        <i>Fade it down and read straight through it.</i>
+      </button></li>
+    </ul>
+  </div>
+
+  <div class="demo">
+    <div class="laptop">
+      <div class="lid">
+        <div class="screen">
+          <div class="notch"></div>
+          <div class="tiles" aria-hidden="true">
+            <div class="tile talk"></div><div class="tile"></div>
+            <div class="tile"></div><div class="tile"></div>
+          </div>
+          <div class="bar" aria-hidden="true"><i></i><i></i><i></i></div>
+          <div class="mirror" id="mirror" role="img" aria-label="The LookNice mirror docked below the notch, cycling through face, eye-only and transparent modes">
+            <div class="feed">
+              <div class="head"></div>
+              <div class="brow l"></div><div class="brow r"></div>
+              <div class="eye l"></div><div class="eye r"></div>
+              <div class="mouth"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="deck"></div>
+      <p class="caption">Not a video &mdash; that's the real behaviour, drawn live.</p>
+    </div>
+  </div>
+</section>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
@@ -313,7 +570,17 @@
     dl.addEventListener('blur', settle);
   }
 
+  // The page scrolls now, so don't keep drawing the hero once it is gone.
+  var onScreen = true;
+  if ('IntersectionObserver' in window) {
+    new IntersectionObserver(function (es) {
+      es.forEach(function (e) { onScreen = e.isIntersecting; });
+    }, { threshold: 0 }).observe(canvas);
+  }
+
   function frame(t) {
+    if (!onScreen) { requestAnimationFrame(frame); return; }
+
     // Before the pointer shows up (and on touch) drift on a slow figure.
     if (!pointerSeen) {
       want.set(Math.sin(t / 3000) * 9, Math.cos(t / 4200) * 5, 26);
@@ -353,6 +620,74 @@
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
+})();
+</script>
+
+
+<script>
+(function () {
+  var mirror = document.getElementById('mirror');
+  var items  = Array.prototype.slice.call(document.querySelectorAll('.flist li'));
+  if (!mirror || !items.length) return;
+
+  // Width/height are percentages of the screen, which is 16:10.4 — so a square
+  // mirror needs a height 1.538x its width.
+  var MODES = {
+    face:  { w: 21, h: 32.3, o: 1 },
+    eyes:  { w: 27, h: 9.0,  o: 1 },
+    ghost: { w: 21, h: 32.3, o: 0.42 }
+  };
+  var order = ['face', 'eyes', 'ghost'];
+  var at = 0, timer = null, blurTimer = null;
+  var slow = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function show(name) {
+    var m = MODES[name];
+    if (!m) return;
+    at = order.indexOf(name);
+
+    // Brief blur across the change, the same trick the app uses to cover the
+    // crop settling.
+    clearTimeout(blurTimer);
+    mirror.classList.add('switching');
+    blurTimer = setTimeout(function () { mirror.classList.remove('switching'); }, 340);
+
+    mirror.classList.toggle('eyes', name === 'eyes');
+    mirror.style.width = m.w + '%';
+    mirror.style.height = m.h + '%';
+    mirror.style.opacity = m.o;
+
+    items.forEach(function (li) {
+      li.classList.toggle('on', li.querySelector('button').dataset.mode === name);
+    });
+  }
+
+  function play() { stop(); if (!slow) timer = setInterval(next, 3400); }
+  function stop() { if (timer) { clearInterval(timer); timer = null; } }
+  function next() { show(order[(at + 1) % order.length]); }
+
+  items.forEach(function (li) {
+    li.querySelector('button').addEventListener('click', function () {
+      show(this.dataset.mode);
+      play();                 // restart the clock so a pick gets its full turn
+    });
+  });
+
+  show('face');
+
+  // Only animate while it is on screen: off-screen intervals are wasted work,
+  // and the grow-out-of-the-notch beat should land when you first see it.
+  if ('IntersectionObserver' in window) {
+    var seen = false;
+    new IntersectionObserver(function (es) {
+      es.forEach(function (e) {
+        if (e.isIntersecting) {
+          if (!seen) { seen = true; mirror.classList.add('grow'); }
+          play();
+        } else stop();
+      });
+    }, { threshold: 0.35 }).observe(mirror);
+  } else play();
 })();
 </script>
 
