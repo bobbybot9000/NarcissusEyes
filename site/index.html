@@ -211,21 +211,57 @@
   scene.add(pair);
   var eyes = [left, right];
 
-  var want = new THREE.Vector3(0, 0, 26);
-  var look = new THREE.Vector3(0, 0, 26);
+  // FAR is a normal gaze; NEAR is close enough that aiming both eyes at the
+  // same point forces them to converge — that IS the cross-eye, no special
+  // per-eye maths needed. ~29 degrees inward at the pair's spacing.
+  var FAR = 26, NEAR = 5.0;
+  var want = new THREE.Vector3(0, 0, FAR);
+  var look = new THREE.Vector3(0, 0, FAR);
   var pointerSeen = false;
 
-  function aim(clientX, clientY) {
+  function ndc(clientX, clientY) {
     var r = canvas.getBoundingClientRect();
-    var nx = ((clientX - r.left) / r.width) * 2 - 1;
-    var ny = -(((clientY - r.top) / r.height) * 2 - 1);
-    want.set(nx * 13, ny * 8, 26);
+    return {
+      x: ((clientX - r.left) / r.width) * 2 - 1,
+      y: -(((clientY - r.top) / r.height) * 2 - 1)
+    };
+  }
+
+  // How far into the gap between the eyes the pointer is, 0..1.
+  function crossing(nx, ny) {
+    var wx = nx * camera.right, wy = ny * camera.top;
+    if (Math.abs(wy) > 3.2) return 0;
+    return 1 - Math.min(1, Math.abs(wx) / 1.4);
+  }
+
+  function aim(clientX, clientY) {
+    var n = ndc(clientX, clientY);
+    want.set(n.x * 13, n.y * 8, FAR - crossing(n.x, n.y) * (FAR - NEAR));
     pointerSeen = true;
   }
+
+  // Which eye is under the pointer, if any. The spheres are wider than they
+  // are tall by the same 0.88 the sclera is squashed by, so test an ellipse.
+  function eyeUnder(nx, ny) {
+    for (var i = 0; i < eyes.length; i++) {
+      var e = eyes[i];
+      var c = e.position.clone().project(camera);
+      var dx = (nx - c.x) / ((e.userData.base * 0.88) / camera.right);
+      var dy = (ny - c.y) / (e.userData.base / camera.top);
+      if (dx * dx + dy * dy <= 1) return e;
+    }
+    return null;
+  }
+
   // Listen on the window, not the canvas — it's pointer-events: none so the
   // copy beneath it stays selectable.
   window.addEventListener('pointermove', function (e) { aim(e.clientX, e.clientY); }, { passive: true });
-  window.addEventListener('pointerdown', function (e) { aim(e.clientX, e.clientY); }, { passive: true });
+  window.addEventListener('pointerdown', function (e) {
+    aim(e.clientX, e.clientY);
+    var n = ndc(e.clientX, e.clientY);
+    var hit = eyeUnder(n.x, n.y);
+    if (hit) blink(hit, performance.now());
+  }, { passive: true });
 
   function resize() {
     var r = canvas.getBoundingClientRect();
@@ -248,11 +284,34 @@
 
   var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var BLINK = 155;
-  eyes.forEach(function (e) {
+  eyes.forEach(function (e, i) {
     e.userData.base = e.scale.x;
     e.userData.next = performance.now() + 2000 + Math.random() * 4000;
     e.userData.start = -1;
+    // Bulge: an underdamped spring, so it overshoots and settles rather than
+    // easing in. The two eyes use slightly different stiffness so the pair
+    // swells raggedly instead of in lockstep.
+    e.userData.bulge = 1;
+    e.userData.bv = 0;
+    e.userData.bk = i === 0 ? 0.15 : 0.185;
   });
+  var bulgeTarget = 1;
+
+  function blink(e, t) {
+    if (e.userData.start >= 0) return;   // already mid-blink
+    e.userData.start = t;
+  }
+
+  // Anticipation on the download button: the eyes widen just before you commit.
+  var dl = document.querySelector('.dl');
+  if (dl && !reduced) {
+    var swell = function () { bulgeTarget = 1.08; };
+    var settle = function () { bulgeTarget = 1; };
+    dl.addEventListener('pointerenter', swell);
+    dl.addEventListener('pointerleave', settle);
+    dl.addEventListener('focus', swell);
+    dl.addEventListener('blur', settle);
+  }
 
   function frame(t) {
     // Before the pointer shows up (and on touch) drift on a slow figure.
@@ -268,18 +327,25 @@
       if (!reduced) {
         var d = e.userData;
         if (d.start < 0 && t >= d.next) d.start = t;
+
+        var squash = 1;
         if (d.start >= 0) {
           var p = (t - d.start) / BLINK;
           if (p >= 1) {
-            e.scale.setScalar(d.base);
             d.start = -1;
             // Blink together, roughly, the way a real pair does.
             d.next = t + 2600 + Math.random() * 4200;
           } else {
-            var squash = 1 - Math.sin(p * Math.PI) * 0.93;
-            e.scale.set(d.base, d.base * squash, d.base);
+            squash = 1 - Math.sin(p * Math.PI) * 0.93;
           }
         }
+
+        d.bv += (bulgeTarget - d.bulge) * d.bk;
+        d.bv *= 0.74;
+        d.bulge += d.bv;
+
+        var w = d.base * d.bulge;
+        e.scale.set(w, w * squash, w);
       }
     }
 
