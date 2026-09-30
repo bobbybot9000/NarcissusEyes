@@ -18,3 +18,5 @@ DerivedData/
 # NOT ignored — Vercel deploys the site straight from this repo, so the download
 # has to be committed or the button 404s.
 /build/
+.vercel
+.env*
