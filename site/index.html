@@ -199,7 +199,6 @@
   .screen {
     position: relative;
     width: 100%; height: 100%;
-    background: #10171C;
     border-radius: 7px;
     overflow: hidden;
   }
@@ -208,7 +207,7 @@
     width: 25%; height: 5.6%;
     background: #1B2227;
     border-radius: 0 0 7px 7px;
-    z-index: 3;
+    z-index: 4;
   }
   .deck {
     width: 112%; margin: 0 -6%;
@@ -223,80 +222,120 @@
     background: rgba(15, 21, 25, 0.22);
   }
 
-  /* Fake call behind the mirror, kept quiet so it never competes. */
-  .tiles { position: absolute; inset: 9% 6% 15%; display: grid; grid-template-columns: 1fr 1fr; gap: 5%; }
-  .tile { background: #1C262C; border-radius: 6px; position: relative; overflow: hidden; }
-  .tile::after {
-    content: ""; position: absolute; left: 50%; top: 54%; transform: translate(-50%, -50%);
-    width: 34%; aspect-ratio: 1; border-radius: 50%;
-    background: #2C3941;
+  /* Desktop: wallpaper + menu bar, nothing else. */
+  .wall {
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(85% 70% at 22% 12%, #6E9BC4 0%, transparent 58%),
+      radial-gradient(75% 65% at 82% 26%, #A87FB8 0%, transparent 60%),
+      radial-gradient(90% 70% at 62% 88%, #2C6E7E 0%, transparent 62%),
+      linear-gradient(158deg, #3C6A92, #21445E 55%, #16293A);
   }
-  .tile.talk { box-shadow: inset 0 0 0 2px rgba(46, 111, 142, 0.85); }
-  .bar {
-    position: absolute; left: 50%; bottom: 4.5%; transform: translateX(-50%);
-    width: 42%; height: 7%; border-radius: 999px; background: #222D34;
-    display: flex; align-items: center; justify-content: center; gap: 7%;
+  .wall::after {
+    content: ""; position: absolute; inset: 0;
+    background: radial-gradient(60% 45% at 50% 4%, rgba(255,255,255,.14), transparent 70%);
   }
-  .bar i { width: 11%; aspect-ratio: 1; border-radius: 50%; background: #3A4850; }
-  .bar i:last-child { background: #B4463A; }
+  .menubar {
+    position: absolute; top: 0; left: 0; right: 0; height: 5.6%;
+    z-index: 2;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 2%;
+    background: rgba(9, 14, 18, 0.34);
+    backdrop-filter: blur(6px);
+    font-size: 6px;
+  }
+  .mb { display: flex; align-items: center; gap: 6px; }
+  .mb s { display: block; width: 13px; height: 3px; border-radius: 2px; background: rgba(255,255,255,.5); text-decoration: none; }
+  .mb s.sm { width: 8px; }
+  .mb em { font-style: normal; font-size: 7.5px; line-height: 1; filter: saturate(1.1); }
+  .mb u { display: block; width: 9px; height: 5px; border-radius: 1.5px; background: rgba(255,255,255,.55); text-decoration: none; }
 
-  /* ---------- The app itself ---------- */
+  /* ---------- The app ---------- */
+
+  /* .app carries the geometry; .mirror clips the feed; .dock sits outside the
+     clip so it survives eye-only mode, and stays opaque when the feed fades —
+     which is what the app itself does. */
+  .app {
+    position: absolute; top: 5.0%; left: 50%;
+    z-index: 3;
+    width: 21%; height: 32.3%;
+    transform: translateX(-50%);
+    transition: width .5s cubic-bezier(.22,1,.36,1),
+                height .5s cubic-bezier(.22,1,.36,1),
+                left .62s cubic-bezier(.3,1.35,.5,1);
+  }
+  /* Eye-only: a short wide band. 27% wide on a 16:10.4 screen needs 9% height
+     to read as the same proportion the app crops to. */
+  .app.eyes { width: 27%; height: 9%; }
+  .app.grow { animation: grow .8s cubic-bezier(.22,1,.36,1) both; }
+  @keyframes grow { from { height: 0; opacity: 0; } }
 
   .mirror {
-    position: absolute; top: 5.0%; left: 50%;
-    transform: translateX(-50%);
-    z-index: 2;
-    width: 21%; height: 32.3%;
+    position: absolute; inset: 0;
     background: #0C1114;
     border-radius: 0 0 9px 9px;   /* square top, round bottom — like the app */
     overflow: hidden;
-    box-shadow: 0 8px 20px -8px rgba(0, 0, 0, 0.6);
-    transition: width .62s cubic-bezier(.22,1,.36,1),
-                height .62s cubic-bezier(.22,1,.36,1),
-                opacity .5s ease;
+    box-shadow: 0 10px 22px -7px rgba(0, 0, 0, 0.7),
+                inset 0 0 0 1px rgba(255, 255, 255, 0.14);
+    transition: opacity .45s ease;
   }
-  .mirror.grow { animation: grow .8s cubic-bezier(.22,1,.36,1) both; }
-  @keyframes grow { from { height: 0; opacity: 0; } }
+  .app.ghost .mirror { opacity: 0.4; }
 
-  /* The feed keeps its own 3:4 proportions and is CROPPED by the mirror box.
-     Sizing it with inset:0 instead would squash the face flat the moment the
-     box goes short and wide for eye-only mode. */
+  /* Placeholder for the capture. Swap this element for an <img>/<video> loop;
+     the crop maths below only cares that it keeps a 3:4 box. */
   .feed {
     position: absolute; left: 50%; top: 50%;
     width: 100%; aspect-ratio: 3 / 4;
-    transform: translate(-50%, -50%) scale(1.12);
-    transition: transform .62s cubic-bezier(.22,1,.36,1), filter .3s ease;
+    transform: translate(-50%, -50%) scale(1.06);
+    background: linear-gradient(150deg, #C3CED6, #8D9CA8 52%, #5C6B77);
+    transition: transform .5s cubic-bezier(.22,1,.36,1), filter .28s ease;
   }
-  .mirror.switching .feed { filter: blur(6px); }
-  /* Eyes sit at 40% height; after a 2.4x zoom that lands 10% above centre. */
-  .mirror.eyes .feed { transform: translate(-50%, -50%) scale(2.4) translateY(10%); }
+  .feed::after {
+    content: ""; position: absolute; inset: 0;
+    background: radial-gradient(48% 38% at 50% 36%, rgba(255,255,255,.34), transparent 72%);
+  }
+  .app.switching .feed { filter: blur(7px); }
+  .app.eyes .feed { transform: translate(-50%, -50%) scale(2.4) translateY(10%); }
 
-  .head {
-    position: absolute; left: 50%; top: 54%; transform: translate(-50%, -50%);
-    width: 84%; height: 92%;
-    border-radius: 47% 47% 42% 42%;
-    background: linear-gradient(165deg, #9FB0BC, #6E808D);
+  .dock {
+    position: absolute; left: 50%; bottom: 7%;
+    transform: translateX(-50%) translateY(5px);
+    display: flex; gap: 9px; align-items: center;
+    padding: 4px 8px; border-radius: 99px;
+    background: rgba(24, 31, 36, 0.86);
+    backdrop-filter: blur(4px);
+    opacity: 0; pointer-events: none;
+    transition: opacity .24s ease, transform .24s ease;
   }
-  .feed .eye {
-    position: absolute; top: 40%; width: 13%; height: 8.5%;
-    border-radius: 50%; background: #101A20;
+  .app.hover .dock { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .app.eyes .dock { bottom: auto; top: calc(100% + 5px); }
+  .dock svg { display: block; width: 11px; height: 11px; color: #fff; opacity: .82; }
+  .dock span { display: grid; place-items: center; width: 15px; height: 15px; border-radius: 50%; transition: background .18s ease; }
+  .dock span.hit { background: rgba(255, 255, 255, 0.26); }
+
+  /* ---------- Pointer ---------- */
+
+  .cursor {
+    position: absolute; z-index: 5;
+    left: 74%; top: 96%;
+    width: 15px; height: 15px;
+    margin: -1px 0 0 -1px;
+    opacity: 0;
+    transition: left .78s cubic-bezier(.4,0,.2,1), top .78s cubic-bezier(.4,0,.2,1), opacity .3s ease;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,.55));
   }
-  .feed .eye.l { left: 30%; }
-  .feed .eye.r { right: 30%; }
-  .feed .eye::after {
-    content: ""; position: absolute; left: 18%; top: 14%;
-    width: 38%; height: 38%; border-radius: 50%; background: rgba(255,255,255,.85);
+  .cursor.show { opacity: 1; }
+  .cursor svg { display: block; width: 100%; height: 100%; }
+  .cursor::after {
+    content: ""; position: absolute; left: 0; top: 0;
+    width: 17px; height: 17px; margin: -4px 0 0 -4px;
+    border-radius: 50%; border: 1.5px solid rgba(255,255,255,.9);
+    opacity: 0; transform: scale(.3);
   }
-  .feed .brow {
-    position: absolute; top: 33%; width: 15%; height: 2.6%;
-    border-radius: 99px; background: rgba(16, 26, 32, .6);
-  }
-  .feed .brow.l { left: 29%; }
-  .feed .brow.r { right: 29%; }
-  .feed .mouth {
-    position: absolute; left: 50%; top: 63%; transform: translateX(-50%);
-    width: 20%; height: 4.5%;
-    border-radius: 0 0 99px 99px; background: rgba(16, 26, 32, .45);
+  .cursor.tap::after { animation: tap .45s ease-out; }
+  @keyframes tap {
+    0%   { opacity: .9; transform: scale(.3); }
+    100% { opacity: 0;  transform: scale(1.7); }
   }
 
   .caption {
@@ -378,24 +417,29 @@
     <div class="laptop">
       <div class="lid">
         <div class="screen">
-          <div class="notch"></div>
-          <div class="tiles" aria-hidden="true">
-            <div class="tile talk"></div><div class="tile"></div>
-            <div class="tile"></div><div class="tile"></div>
+          <div class="wall" aria-hidden="true"></div>
+          <div class="menubar" aria-hidden="true">
+            <div class="mb"><em>&#63743;</em><s></s><s class="sm"></s><s class="sm"></s></div>
+            <div class="mb"><em>&#128064;</em><u></u><u></u><s class="sm"></s></div>
           </div>
-          <div class="bar" aria-hidden="true"><i></i><i></i><i></i></div>
-          <div class="mirror" id="mirror" role="img" aria-label="The LookNice mirror docked below the notch, cycling through face, eye-only and transparent modes">
-            <div class="feed">
-              <div class="head"></div>
-              <div class="brow l"></div><div class="brow r"></div>
-              <div class="eye l"></div><div class="eye r"></div>
-              <div class="mouth"></div>
+          <div class="notch" aria-hidden="true"></div>
+
+          <div class="app" id="app" role="img" aria-label="LookNice docked below the notch, cycling through face, eye-only and transparent modes">
+            <div class="mirror"><div class="feed"></div></div>
+            <div class="dock" aria-hidden="true">
+              <span data-btn="face"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="12" cy="10" r="3"/><path d="M6.5 19a5.5 5.5 0 0 1 11 0"/></svg></span>
+              <span data-btn="eyes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><ellipse cx="7.5" cy="12" rx="5" ry="4"/><ellipse cx="16.5" cy="12" rx="5" ry="4"/><circle cx="7.5" cy="12" r="1.6" fill="currentColor"/><circle cx="16.5" cy="12" r="1.6" fill="currentColor"/></svg></span>
+              <span data-btn="ghost"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18z" fill="currentColor" stroke="none"/></svg></span>
             </div>
+          </div>
+
+          <div class="cursor" id="cursor" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M5 2.5 19.5 12 12.8 13.3 9.6 20 5 2.5Z" fill="#fff" stroke="#11171B" stroke-width="1.3" stroke-linejoin="round"/></svg>
           </div>
         </div>
       </div>
       <div class="deck"></div>
-      <p class="caption">Not a video &mdash; that's the real behaviour, drawn live.</p>
+      <p class="caption">Drawn live &mdash; not a recording.</p>
     </div>
   </div>
 </section>
@@ -626,68 +670,143 @@
 
 <script>
 (function () {
-  var mirror = document.getElementById('mirror');
+  var app    = document.getElementById('app');
+  var cursor = document.getElementById('cursor');
   var items  = Array.prototype.slice.call(document.querySelectorAll('.flist li'));
-  if (!mirror || !items.length) return;
+  if (!app || !cursor) return;
 
-  // Width/height are percentages of the screen, which is 16:10.4 — so a square
-  // mirror needs a height 1.538x its width.
-  var MODES = {
-    face:  { w: 21, h: 32.3, o: 1 },
-    eyes:  { w: 27, h: 9.0,  o: 1 },
-    ghost: { w: 21, h: 32.3, o: 0.42 }
-  };
-  var order = ['face', 'eyes', 'ghost'];
-  var at = 0, timer = null, blurTimer = null;
+  var dockBtns = {};
+  Array.prototype.forEach.call(app.querySelectorAll('.dock span'), function (el) {
+    dockBtns[el.dataset.btn] = el;
+  });
+
   var slow = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var timers = [], mode = 'face', ghost = false;
 
-  function show(name) {
-    var m = MODES[name];
-    if (!m) return;
-    at = order.indexOf(name);
+  function at(ms, fn) { timers.push(setTimeout(fn, ms)); }
+  function clear() { timers.forEach(clearTimeout); timers = []; }
 
-    // Brief blur across the change, the same trick the app uses to cover the
-    // crop settling.
-    clearTimeout(blurTimer);
-    mirror.classList.add('switching');
-    blurTimer = setTimeout(function () { mirror.classList.remove('switching'); }, 340);
+  // --- primitives -----------------------------------------------------------
 
-    mirror.classList.toggle('eyes', name === 'eyes');
-    mirror.style.width = m.w + '%';
-    mirror.style.height = m.h + '%';
-    mirror.style.opacity = m.o;
+  function move(xPct, yPct) { cursor.style.left = xPct + '%'; cursor.style.top = yPct + '%'; }
 
+  function tap(btn) {
+    cursor.classList.remove('tap');
+    void cursor.offsetWidth;          // restart the ripple
+    cursor.classList.add('tap');
+    if (btn && dockBtns[btn]) {
+      dockBtns[btn].classList.add('hit');
+      setTimeout(function () { dockBtns[btn].classList.remove('hit'); }, 220);
+    }
+  }
+
+  // The blur is the app's own trick for covering the crop settling.
+  function blurSwap(fn) {
+    app.classList.add('switching');
+    setTimeout(fn, 90);
+    setTimeout(function () { app.classList.remove('switching'); }, 380);
+  }
+
+  function setMode(next) {
+    mode = next;
+    blurSwap(function () { app.classList.toggle('eyes', mode === 'eyes'); });
+    sync();
+  }
+
+  function setGhost(on) { ghost = on; app.classList.toggle('ghost', on); sync(); }
+
+  // The feature list reflects whatever the app is doing.
+  function sync() {
+    var showing = ghost ? 'ghost' : mode;
     items.forEach(function (li) {
-      li.classList.toggle('on', li.querySelector('button').dataset.mode === name);
+      li.classList.toggle('on', li.querySelector('button').dataset.mode === showing);
     });
   }
 
-  function play() { stop(); if (!slow) timer = setInterval(next, 3400); }
-  function stop() { if (timer) { clearInterval(timer); timer = null; } }
-  function next() { show(order[(at + 1) % order.length]); }
+  // Where each dock button sits, as a % of the screen. The dock is centred on
+  // the app, so these are offsets from its middle.
+  function dockPos(which) {
+    var r = app.querySelector('.dock').getBoundingClientRect();
+    var s = app.closest('.screen').getBoundingClientRect();
+    var b = dockBtns[which].getBoundingClientRect();
+    return {
+      x: ((b.left + b.width / 2 - s.left) / s.width) * 100,
+      y: ((b.top + b.height / 2 - s.top) / s.height) * 100
+    };
+  }
 
+  function toDock(which) { var d = dockPos(which); move(d.x, d.y); }
+
+  // --- the loop -------------------------------------------------------------
+
+  function reset() {
+    clear();
+    app.classList.remove('eyes', 'ghost', 'hover', 'switching');
+    mode = 'face'; ghost = false; sync();
+    cursor.classList.remove('show');
+    move(74, 96);
+  }
+
+  function run() {
+    reset();
+
+    //  the pointer arrives and the dock reveals on hover
+    at(700,  function () { cursor.classList.add('show'); move(58, 62); });
+    at(1500, function () { move(50, 26); });
+    at(2250, function () { app.classList.add('hover'); });
+
+    //  eye-only
+    at(2900, function () { toDock('eyes'); });
+    at(3700, function () { tap('eyes'); setMode('eyes'); });
+
+    //  transparent, on top of eye-only — the dock stays solid as the feed fades
+    at(5000, function () { toDock('ghost'); });
+    at(5700, function () { tap('ghost'); setGhost(true); });
+
+    //  back to the full face
+    at(7000, function () { toDock('face'); });
+    at(7700, function () { tap('face'); setGhost(false); setMode('face'); });
+
+    //  drag it off the notch and let it settle back
+    at(9000, function () { move(50, 14); });
+    at(9700, function () { app.classList.remove('hover'); app.style.left = '33%'; move(33, 14); });
+    at(10900, function () { app.style.left = '50%'; move(50, 14); });
+
+    //  and away
+    at(12100, function () { move(76, 92); cursor.classList.remove('show'); });
+    at(13000, run);
+  }
+
+  function stop() { clear(); }
+
+  // Let the list drive it too — a click takes over from the loop.
   items.forEach(function (li) {
     li.querySelector('button').addEventListener('click', function () {
-      show(this.dataset.mode);
-      play();                 // restart the clock so a pick gets its full turn
+      clear();
+      cursor.classList.remove('show');
+      app.classList.add('hover');
+      var m = this.dataset.mode;
+      if (m === 'ghost') { setGhost(true); setMode('face'); }
+      else { setGhost(false); setMode(m); }
+      at(4200, run);                 // hand back to the loop after a beat
     });
   });
 
-  show('face');
+  sync();
 
-  // Only animate while it is on screen: off-screen intervals are wasted work,
-  // and the grow-out-of-the-notch beat should land when you first see it.
+  if (slow) { app.classList.remove('hover'); return; }   // static for reduced motion
+
   if ('IntersectionObserver' in window) {
-    var seen = false;
+    var started = false;
     new IntersectionObserver(function (es) {
       es.forEach(function (e) {
         if (e.isIntersecting) {
-          if (!seen) { seen = true; mirror.classList.add('grow'); }
-          play();
+          if (!started) { started = true; app.classList.add('grow'); }
+          run();
         } else stop();
       });
-    }, { threshold: 0.35 }).observe(mirror);
-  } else play();
+    }, { threshold: 0.35 }).observe(app);
+  } else run();
 })();
 </script>
 
