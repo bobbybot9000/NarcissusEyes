@@ -2,7 +2,7 @@
 .build/
 
 # Local dev bundle produced by build_app.sh (the Xcode archive is the release path)
-NarcissusEyes.app/
+LookNice.app/
 
 # Xcode
 DerivedData/
@@ -14,8 +14,7 @@ DerivedData/
 # macOS
 .DS_Store
 
-# Release artifacts from release.sh
+# Build scratch from make_dmg.sh / release.sh. site/LookNice.dmg is deliberately
+# NOT ignored — Vercel deploys the site straight from this repo, so the download
+# has to be committed or the button 404s.
 /build/
-
-# Built DMG, staged into site/ for upload by make_dmg.sh
-site/*.dmg
