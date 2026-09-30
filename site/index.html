@@ -51,7 +51,9 @@
 
   /* The hero is its own stacking context so the eyes and the sticker scroll
      away with it instead of hanging over the section below. */
-  .hero { position: relative; min-height: 100vh; }
+  /* Short of a full viewport on purpose: the torn edge shows at the
+     bottom of the first screen and asks to be scrolled. */
+  .hero { position: relative; min-height: 93vh; }
 
   /* The eyes own the right half and bleed off the edge. */
   #eyes {
@@ -68,7 +70,7 @@
   .page {
     position: relative;
     z-index: 1;
-    min-height: 100vh;
+    min-height: 93vh;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -199,15 +201,6 @@
     align-items: center;
   }
 
-  .feat h2 {
-    margin: 0 0 30px;
-    font-family: var(--mono);
-    font-size: 12px;
-    font-weight: 500;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    color: var(--n-acc);
-  }
 
   /* Reveal on entry, staggered. */
   .rev { opacity: 0; transform: translateY(16px); }
@@ -445,7 +438,6 @@
 
     <p class="meta">
       <span>Free · macOS 12+ · Under 1 MB</span>
-      <span>No account. No network. No nonsense.</span>
     </p>
   </div>
 </main>
@@ -463,10 +455,9 @@
 <div class="tear bot" aria-hidden="true"></div>
 <section class="feat" id="features">
   <div class="rev">
-    <h2>Features</h2>
     <ul class="flist">
       <li class="on"><button type="button" data-mode="face">
-        <b>Sits right under your webcam.</b>
+        <b>LookNice sits right under your webcam.</b>
         <i>Notch friendly &mdash; it grows out of the notch and hugs the top of the screen.</i>
       </button></li>
       <li><button type="button" data-mode="eyes">
