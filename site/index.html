@@ -162,23 +162,35 @@
     place-items: center;
     transform: rotate(8deg);
     pointer-events: none;
+    animation: slap .46s cubic-bezier(.2, .8, .2, 1) .95s both;
+  }
+  /* Lands a beat after the page settles, so it reads as slapped on rather
+     than as part of the layout. */
+  @keyframes slap {
+    0%   { opacity: 0; transform: rotate(-24deg) scale(2.5); }
+    55%  { opacity: 1; transform: rotate(11deg) scale(.9); }
+    75%  { transform: rotate(6.5deg) scale(1.06); }
+    100% { opacity: 1; transform: rotate(8deg) scale(1); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .sticker { animation: none; }
   }
   .sticker svg { position: absolute; inset: 0; width: 100%; height: 100%; }
   .sticker span {
     position: relative;
     display: block;
-    width: 78%;
+    width: 82%;
     text-align: center;
     color: #101614;
     line-height: 1.12;
-    font-size: clamp(10px, 0.92vw, 12px);
+    font-size: clamp(11.5px, 1.1vw, 14.5px);
     font-weight: 500;
     letter-spacing: 0.005em;
   }
   .sticker b {
     display: block;
     font-weight: 800;
-    font-size: 1.44em;
+    font-size: 1.5em;
     letter-spacing: -0.02em;
     margin-top: 2px;
   }
