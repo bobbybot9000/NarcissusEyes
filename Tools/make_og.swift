@@ -37,7 +37,7 @@ func rgb(_ r: Double, _ g: Double, _ b: Double, _ a: Double = 1) -> CGColor {
 
 // Base: the site's --night, lifted slightly toward the top.
 let base = CGGradient(colorsSpace: space,
-                      colors: [rgb(20, 30, 39), rgb(11, 17, 22)] as CFArray,
+                      colors: [rgb(16, 48, 43), rgb(8, 23, 18)] as CFArray,
                       locations: [0, 1])!
 ctx.drawLinearGradient(base, start: CGPoint(x: 0, y: H), end: CGPoint(x: 0, y: 0), options: [])
 
@@ -51,8 +51,8 @@ func wash(_ cx: Double, _ cy: Double, _ r: Double, _ c: CGColor) {
                            endCenter: CGPoint(x: cx, y: cy), endRadius: r,
                            options: [])
 }
-wash(W * 0.30, H * 0.74, 520, rgb(96, 152, 200, 0.30))
-wash(W * 0.76, H * 0.30, 460, rgb(156, 112, 182, 0.22))
+wash(W * 0.30, H * 0.74, 520, rgb(118, 194, 200, 0.28))
+wash(W * 0.76, H * 0.30, 460, rgb(124, 176, 126, 0.22))
 
 // The icon, centred, with room to breathe. Social crops nibble the edges, so
 // it sits well inside the safe area.
