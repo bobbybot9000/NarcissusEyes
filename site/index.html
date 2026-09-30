@@ -281,21 +281,21 @@
   }
   .app.ghost .mirror { opacity: 0.4; }
 
-  /* Placeholder for the capture. Swap this element for an <img>/<video> loop;
-     the crop maths below only cares that it keeps a 3:4 box. */
+  /* The capture. object-fit stops it stretching into the 3:4 box; a square
+     source is cropped left and right, so vertical position maps 1:1 to the
+     source — which is what the eye crop below relies on. */
   .feed {
     position: absolute; left: 50%; top: 50%;
-    width: 100%; aspect-ratio: 3 / 4;
+    width: 100%; height: auto; aspect-ratio: 3 / 4;
+    object-fit: cover; object-position: 50% 42%;
     transform: translate(-50%, -50%) scale(1.06);
-    background: linear-gradient(150deg, #C3CED6, #8D9CA8 52%, #5C6B77);
     transition: transform .5s cubic-bezier(.22,1,.36,1), filter .28s ease;
   }
-  .feed::after {
-    content: ""; position: absolute; inset: 0;
-    background: radial-gradient(48% 38% at 50% 36%, rgba(255,255,255,.34), transparent 72%);
-  }
   .app.switching .feed { filter: blur(7px); }
-  .app.eyes .feed { transform: translate(-50%, -50%) scale(2.4) translateY(10%); }
+  /* Eye-only is mostly a CROP, not a zoom: the band is the notch's width, so
+     the full face width already fits. Only a little magnification, then
+     translateY(4%) to bring the eye line (at ~48% of the frame) to the centre. */
+  .app.eyes .feed { transform: translate(-50%, -50%) scale(1.3) translateY(1%); }
 
   .dock {
     position: absolute; left: 50%; bottom: 7%;
@@ -420,7 +420,7 @@
           <div class="notch" aria-hidden="true"></div>
 
           <div class="app" id="app" role="img" aria-label="LookNice docked below the notch, cycling through face, eye-only and transparent modes">
-            <div class="mirror"><div class="feed"></div></div>
+            <div class="mirror"><img class="feed" src="face.jpg" alt="" width="560" height="560"></div>
             <div class="dock" aria-hidden="true">
               <span data-btn="face"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="12" cy="10" r="3"/><path d="M6.5 19a5.5 5.5 0 0 1 11 0"/></svg></span>
               <span data-btn="eyes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><ellipse cx="7.5" cy="12" rx="5" ry="4"/><ellipse cx="16.5" cy="12" rx="5" ry="4"/><circle cx="7.5" cy="12" r="1.6" fill="currentColor"/><circle cx="16.5" cy="12" r="1.6" fill="currentColor"/></svg></span>
