@@ -304,6 +304,20 @@
     border-radius: 0 0 7px 7px;
     z-index: 4;
   }
+  /* The lens. Sized off the notch's height so it scales with the laptop, and
+     offset left of centre the way it sits on a real MacBook — the mirror
+     docks dead centre, so a centred lens would look like its reflection. */
+  .notch::after {
+    content: "";
+    position: absolute; top: 50%; left: 34%;
+    transform: translate(-50%, -50%);
+    height: 40%; aspect-ratio: 1;
+    border-radius: 50%;
+    background:
+      radial-gradient(circle at 36% 30%, #55666F 0%, #1A242A 48%, #05090B 100%);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06),
+                0 0 4px rgba(120, 190, 200, 0.18);
+  }
   .deck {
     width: 112%; margin: 0 -6%;
     height: 14px;
