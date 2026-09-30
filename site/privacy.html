@@ -20,6 +20,16 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,700;12..96,800&family=DM+Mono:wght@400;500&display=swap">
 
 <style>
+  /* São Torpes by Pedro Miguel Xarepe — same subset file the home page uses,
+     so it is already cached by the time anyone follows the Privacy link. */
+  @font-face {
+    font-family: "Sao Torpes";
+    src: url("saotorpes.woff2") format("woff2");
+    font-weight: 400;
+    font-display: swap;
+  }
+</style>
+<style>
   :root {
     --paper: #EAF0E9;
     --ink:   #101614;
@@ -28,6 +38,7 @@
     --line:  #D5DFD3;
     --link:  #0E725A;
     --disp:  "Bricolage Grotesque", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --show:  "Sao Torpes", "Bricolage Grotesque", Impact, sans-serif;
     --mono:  "DM Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
   }
 
@@ -61,10 +72,11 @@
 
   h1 {
     margin: 0 0 18px;
-    font-weight: 800;
+    font-family: var(--show);
+    font-weight: 400;              /* the face ships in one weight */
     font-size: clamp(34px, 6vw, 52px);
-    line-height: 0.98;
-    letter-spacing: -0.03em;
+    line-height: 0.96;
+    letter-spacing: -0.008em;
   }
   .lede { margin: 0 0 44px; font-size: 18px; color: var(--ink-2); }
 
