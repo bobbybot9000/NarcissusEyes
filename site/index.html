@@ -204,7 +204,7 @@
   }
   .notch {
     position: absolute; top: 0; left: 50%; transform: translateX(-50%);
-    width: 25%; height: 5.6%;
+    width: 23%; height: 5.6%;
     background: #1B2227;
     border-radius: 0 0 7px 7px;
     z-index: 4;
@@ -256,17 +256,17 @@
      clip so it survives eye-only mode, and stays opaque when the feed fades —
      which is what the app itself does. */
   .app {
-    position: absolute; top: 5.0%; left: 50%;
+    position: absolute; top: 4.4%; left: 50%;
     z-index: 3;
-    width: 21%; height: 32.3%;
+    width: 23%; height: 33.4%;
     transform: translateX(-50%);
     transition: width .5s cubic-bezier(.22,1,.36,1),
                 height .5s cubic-bezier(.22,1,.36,1),
                 left .62s cubic-bezier(.3,1.35,.5,1);
   }
-  /* Eye-only: a short wide band. 27% wide on a 16:10.4 screen needs 9% height
-     to read as the same proportion the app crops to. */
-  .app.eyes { width: 27%; height: 9%; }
+  /* Eye-only just shortens it. Docked under the notch the app keeps the
+     notch's width whatever the mode, so the width does not change here. */
+  .app.eyes { height: 9.4%; }
   .app.grow { animation: grow .8s cubic-bezier(.22,1,.36,1) both; }
   @keyframes grow { from { height: 0; opacity: 0; } }
 
@@ -338,11 +338,6 @@
     100% { opacity: 0;  transform: scale(1.7); }
   }
 
-  .caption {
-    margin: 18px auto 0; text-align: center;
-    font-family: var(--mono); font-size: 11.5px; letter-spacing: .04em;
-    color: var(--ink-3);
-  }
 
   @media (max-width: 860px) {
     #eyes { position: absolute; width: 100%; height: 42vh; top: 0; right: 0; }
@@ -419,7 +414,7 @@
         <div class="screen">
           <div class="wall" aria-hidden="true"></div>
           <div class="menubar" aria-hidden="true">
-            <div class="mb"><em>&#63743;</em><s></s><s class="sm"></s><s class="sm"></s></div>
+            <div class="mb"><s class="sm"></s><s></s><s class="sm"></s><s class="sm"></s></div>
             <div class="mb"><em>&#128064;</em><u></u><u></u><s class="sm"></s></div>
           </div>
           <div class="notch" aria-hidden="true"></div>
@@ -439,7 +434,6 @@
         </div>
       </div>
       <div class="deck"></div>
-      <p class="caption">Drawn live &mdash; not a recording.</p>
     </div>
   </div>
 </section>
