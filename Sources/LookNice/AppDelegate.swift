@@ -59,11 +59,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         menu.addItem(NSMenuItem.separator())
 
-        let aboutItem = NSMenuItem(title: "About Narcissus", action: #selector(showAbout), keyEquivalent: "")
+        let aboutItem = NSMenuItem(title: "About LookNice", action: #selector(showAbout), keyEquivalent: "")
         aboutItem.target = self
         menu.addItem(aboutItem)
 
-        let quitItem = NSMenuItem(title: "Quit Narcissus", action: #selector(quit), keyEquivalent: "q")
+        let quitItem = NSMenuItem(title: "Quit LookNice", action: #selector(quit), keyEquivalent: "q")
         quitItem.target = self
         menu.addItem(quitItem)
         return menu

@@ -2,7 +2,7 @@ import AVFoundation
 import AppKit
 import CoreGraphics
 
-/// Picks which camera and which screen Narcissus should use, preferring an
+/// Picks which camera and which screen LookNice should use, preferring an
 /// external webcam + external display when present and falling back to the
 /// built-in laptop camera + screen otherwise. Re-resolves live as devices are
 /// connected or disconnected.
@@ -87,8 +87,8 @@ final class DeviceCoordinator {
     // MARK: - Screen
 
     private func resolveScreen() {
-        guard let screen = preferredScreen(), screen.narcissusDisplayID != lastScreenID else { return }
-        lastScreenID = screen.narcissusDisplayID
+        guard let screen = preferredScreen(), screen.displayIdentifier != lastScreenID else { return }
+        lastScreenID = screen.displayIdentifier
         onScreenChange?(screen)
     }
 
@@ -108,7 +108,7 @@ final class DeviceCoordinator {
     /// bookkeeping so a later automatic re-resolve (from an unrelated device
     /// event) doesn't fight the user's placement by snapping the camera back.
     func userRelocated(to screen: NSScreen) {
-        lastScreenID = screen.narcissusDisplayID
+        lastScreenID = screen.displayIdentifier
 
         let devices = discoverCameras()
         let device = screen.isBuiltIn
@@ -122,11 +122,11 @@ final class DeviceCoordinator {
 
 extension NSScreen {
     var isBuiltIn: Bool {
-        guard let id = narcissusDisplayID else { return false }
+        guard let id = displayIdentifier else { return false }
         return CGDisplayIsBuiltin(id) != 0
     }
 
-    var narcissusDisplayID: CGDirectDisplayID? {
+    var displayIdentifier: CGDirectDisplayID? {
         guard let number = deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber else {
             return nil
         }

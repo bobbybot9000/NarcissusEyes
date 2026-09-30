@@ -17,7 +17,7 @@ enum CameraFeedState {
 
 final class CameraController: NSObject {
     let session = AVCaptureSession()
-    private let videoOutputQueue = DispatchQueue(label: "narcissus.camera.output")
+    private let videoOutputQueue = DispatchQueue(label: "looknice.camera.output")
     private let videoOutput = AVCaptureVideoDataOutput()
     private var currentInput: AVCaptureDeviceInput?
 

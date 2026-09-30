@@ -8,7 +8,7 @@ final class MirrorDockView: NSView {
     var onTransparentTapped: (() -> Void)?
 
     private let faceButton = MirrorDockView.makeButton(symbol: "person.crop.square", tooltip: "Face")
-    private let eyesButton = MirrorDockView.makeButton(symbol: "eye", tooltip: "Eyes")
+    private let eyesButton = MirrorDockView.makeButton(symbol: "eyes", fallback: "eye", tooltip: "Eyes")
     private let transparentButton = MirrorDockView.makeButton(symbol: "circle.lefthalf.filled", tooltip: "Transparent")
 
     override init(frame frameRect: NSRect) {
@@ -45,9 +45,10 @@ final class MirrorDockView: NSView {
         alphaValue < 0.05 ? nil : super.hitTest(point)
     }
 
-    private static func makeButton(symbol: String, tooltip: String) -> NSButton {
+    private static func makeButton(symbol: String, fallback: String? = nil, tooltip: String) -> NSButton {
         let button = NSButton()
         button.image = NSImage(systemSymbolName: symbol, accessibilityDescription: tooltip)
+            ?? fallback.flatMap { NSImage(systemSymbolName: $0, accessibilityDescription: tooltip) }
         button.imagePosition = .imageOnly
         button.isBordered = false
         button.bezelStyle = .regularSquare

@@ -6,7 +6,7 @@
     <key>com.apple.security.app-sandbox</key>
     <true/>
 
-    <!-- The only capability Narcissus needs: read the webcam. No network, no
+    <!-- The only capability LookNice needs: read the webcam. No network, no
          file access, no anything else — which is what lets the App Store
          privacy label read "Data Not Collected". -->
     <key>com.apple.security.device.camera</key>

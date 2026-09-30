@@ -12,9 +12,9 @@ final class FaceWindow: NSObject {
     private let panel: NSPanel
     private let faceView: FaceView
 
-    private static let positionKey = "narcissus.windowOriginX"
-    private static let dockModeKey = "narcissus.dockMode"
-    private static let displayIDKey = "narcissus.windowDisplayID"
+    private static let positionKey = "looknice.windowOriginX"
+    private static let dockModeKey = "looknice.dockMode"
+    private static let displayIDKey = "looknice.windowDisplayID"
 
     private var currentSize = FaceWindow.faceSize
     private var preferredScreen: NSScreen?
@@ -215,7 +215,7 @@ final class FaceWindow: NSObject {
         // for; restoring them onto a different display (changed arrangement,
         // missing monitor) would land the Mirror somewhere arbitrary.
         let savedDisplayID = UserDefaults.standard.object(forKey: Self.displayIDKey) as? UInt32
-        let savedXIsForThisScreen = savedDisplayID != nil && savedDisplayID == screen.narcissusDisplayID
+        let savedXIsForThisScreen = savedDisplayID != nil && savedDisplayID == screen.displayIdentifier
         let savedX = (restoringSavedX && savedXIsForThisScreen)
             ? UserDefaults.standard.object(forKey: Self.positionKey) as? CGFloat
             : nil
@@ -365,7 +365,7 @@ final class FaceWindow: NSObject {
         // Compare display IDs, not object identity — AppKit doesn't guarantee
         // stable NSScreen instances across calls, and a false mismatch here
         // would silently force a camera switch on an ordinary drag.
-        let landedOnNewScreen = dragStartScreen.map { $0.narcissusDisplayID != screen.narcissusDisplayID } ?? false
+        let landedOnNewScreen = dragStartScreen.map { $0.displayIdentifier != screen.displayIdentifier } ?? false
         if landedOnNewScreen {
             onUserRelocatedToScreen?(screen)
         }
@@ -381,7 +381,7 @@ final class FaceWindow: NSObject {
 
         UserDefaults.standard.set(resolved.x, forKey: Self.positionKey)
         UserDefaults.standard.set(dockMode.rawValue, forKey: Self.dockModeKey)
-        if let displayID = screen.narcissusDisplayID {
+        if let displayID = screen.displayIdentifier {
             UserDefaults.standard.set(displayID, forKey: Self.displayIDKey)
         }
     }
