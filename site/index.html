@@ -225,14 +225,18 @@
   .feat {
     position: relative;
     z-index: 1;
-    max-width: 1180px;
+    max-width: 1560px;
     margin: 0 auto;
     padding: 15vh 40px 13vh;
     display: grid;
-    grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);
-    gap: clamp(32px, 5vw, 78px);
+    /* The demo is the argument, so it takes the larger share and keeps
+       growing on wide screens; the copy is capped for line length below. */
+    grid-template-columns: minmax(0, 0.66fr) minmax(0, 1.34fr);
+    gap: clamp(32px, 5vw, 86px);
     align-items: center;
   }
+  /* Measure, not column width — the grid track gets wide on a big display. */
+  .feat > :first-child { max-width: 38ch; justify-self: end; }
 
 
   /* Reveal on entry, staggered. */
@@ -264,7 +268,7 @@
   /* ---------- Laptop ---------- */
 
   .demo { display: flex; justify-content: center; }
-  .laptop { width: 100%; max-width: 560px; }
+  .laptop { width: 100%; max-width: 1000px; }
 
   .lid {
     position: relative;
@@ -439,6 +443,8 @@
     .col { max-width: none; }
     .dl { width: 100%; justify-content: center; }
     .feat { grid-template-columns: 1fr; gap: 34px; }
+    /* one column: undo the two-column measure cap and right-alignment */
+    .feat > :first-child { max-width: none; justify-self: stretch; }
     .feat { padding: 9vh 24px 8vh; }
     .foot { padding: 0 24px 40px; font-size: 11px; }
     .demo { order: -1; }
