@@ -22,6 +22,11 @@
     --ink-3: #8996A1;
     --iris:  #16323F;
     --link:  #2E6F8E;
+    --night: #0B1116;
+    --n-1:   #EEF3F6;
+    --n-2:   #93A5B1;
+    --n-3:   #5E717C;
+    --n-acc: #86BAD6;
     --disp:  "Bricolage Grotesque", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     --mono:  "DM Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
   }
@@ -147,41 +152,79 @@
 
   /* ---------- Features ---------- */
 
+  /* The scroll payoff: the page changes register here. Full-bleed dark, with
+     the laptop lit against it. */
+  .deep {
+    position: relative;
+    background: var(--night);
+    color: var(--n-1);
+    overflow: hidden;
+  }
+  /* A wash of the wallpaper's own colour, so the screen looks like it is
+     throwing light into the room. */
+  .deep::before {
+    content: "";
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(58% 50% at 70% 42%, rgba(96, 152, 200, 0.30), transparent 70%),
+      radial-gradient(40% 36% at 86% 32%, rgba(156, 112, 182, 0.20), transparent 72%),
+      radial-gradient(34% 30% at 52% 88%, rgba(44, 110, 126, 0.14), transparent 72%);
+    pointer-events: none;
+  }
+  /* Hairline at the seam, the way a lit panel catches its own edge. */
+  .deep::after {
+    content: "";
+    position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,.14) 30%, rgba(255,255,255,.14) 70%, transparent);
+  }
+
   .feat {
     position: relative;
+    z-index: 1;
     max-width: 1180px;
     margin: 0 auto;
-    padding: 4vh 40px 15vh;
+    padding: 15vh 40px 13vh;
     display: grid;
-    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
-    gap: clamp(32px, 5vw, 76px);
+    grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);
+    gap: clamp(32px, 5vw, 78px);
     align-items: center;
   }
 
   .feat h2 {
-    margin: 0 0 26px;
+    margin: 0 0 30px;
     font-family: var(--mono);
     font-size: 12px;
     font-weight: 500;
     letter-spacing: 0.16em;
     text-transform: uppercase;
-    color: var(--link);
+    color: var(--n-acc);
+  }
+
+  /* Reveal on entry, staggered. */
+  .rev { opacity: 0; transform: translateY(16px); }
+  .rev.in {
+    opacity: 1; transform: none;
+    transition: opacity .8s cubic-bezier(.22,1,.36,1) var(--d, 0s),
+                transform .8s cubic-bezier(.22,1,.36,1) var(--d, 0s);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .rev { opacity: 1; transform: none; }
   }
 
   .flist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
   .flist button {
     display: block; width: 100%; text-align: left;
-    font: inherit; color: var(--ink-2);
+    font: inherit; color: var(--n-2);
     background: none; border: 0; border-left: 2px solid transparent;
     padding: 13px 0 13px 18px; margin: 0; cursor: pointer;
     transition: color .28s ease, border-color .28s ease, opacity .28s ease;
     opacity: 0.55;
   }
-  .flist button b { display: block; color: var(--ink); font-weight: 700; font-size: 17.5px; letter-spacing: -0.012em; }
+  .flist button b { display: block; color: var(--n-1); font-weight: 700; font-size: 17.5px; letter-spacing: -0.012em; }
   .flist button i { font-style: normal; font-size: 15px; }
-  .flist li.on button { opacity: 1; border-left-color: var(--iris); }
+  .flist li.on button { opacity: 1; border-left-color: var(--n-acc); }
   .flist button:hover { opacity: 1; }
-  .flist button:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; border-radius: 3px; }
+  .flist button:focus-visible { outline: 2px solid var(--n-acc); outline-offset: 2px; border-radius: 3px; }
 
   /* ---------- Laptop ---------- */
 
@@ -194,7 +237,8 @@
     background: linear-gradient(168deg, #39434A, #1B2227);
     border-radius: 15px;
     padding: 1.6%;
-    box-shadow: 0 26px 50px -24px rgba(15, 21, 25, 0.5);
+    box-shadow: 0 40px 80px -30px rgba(0, 0, 0, 0.85),
+                0 0 0 1px rgba(255, 255, 255, 0.06);
   }
   .screen {
     position: relative;
@@ -339,13 +383,29 @@
   }
 
 
+  .foot {
+    position: relative; z-index: 1;
+    max-width: 1180px; margin: 0 auto;
+    padding: 0 40px 46px;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 18px; flex-wrap: wrap;
+    font-family: var(--mono); font-size: 11.5px; letter-spacing: .04em;
+    color: var(--n-3);
+  }
+  .foot .m { display: inline-flex; align-items: center; gap: 8px; color: var(--n-2); }
+  .foot nav { display: flex; gap: 20px; }
+  .foot a { color: var(--n-2); text-decoration: none; border-bottom: 1px solid rgba(147,165,177,.3); padding-bottom: 1px; }
+  .foot a:hover { color: var(--n-1); border-bottom-color: currentColor; }
+
   @media (max-width: 860px) {
     #eyes { position: absolute; width: 100%; height: 42vh; top: 0; right: 0; }
     .sticker { position: absolute; width: 132px; right: 5vw; top: calc(42vh - 74px); }
     .page { justify-content: flex-start; padding: calc(42vh + 28px) 24px 56px; gap: 28px; }
     .col { max-width: none; }
     .dl { width: 100%; justify-content: center; }
-    .feat { grid-template-columns: 1fr; padding: 2vh 24px 12vh; gap: 34px; }
+    .feat { grid-template-columns: 1fr; gap: 34px; }
+    .feat { padding: 9vh 24px 8vh; }
+    .foot { padding: 0 24px 40px; font-size: 11px; }
     .demo { order: -1; }
   }
 </style>
@@ -376,7 +436,7 @@
 
     <p class="meta">
       <span>Free · macOS 12+ · Under 1 MB</span>
-      <span><a href="privacy.html">Privacy</a> · © 2026 BobCo.</span>
+      <span>No account. No network. No nonsense.</span>
     </p>
   </div>
 </main>
@@ -389,8 +449,9 @@
 </aside>
 </div>
 
+<div class="deep">
 <section class="feat" id="features">
-  <div>
+  <div class="rev">
     <h2>Features</h2>
     <ul class="flist">
       <li class="on"><button type="button" data-mode="face">
@@ -408,7 +469,7 @@
     </ul>
   </div>
 
-  <div class="demo">
+  <div class="demo rev" style="--d:.12s">
     <div class="laptop">
       <div class="lid">
         <div class="screen">
@@ -437,6 +498,16 @@
     </div>
   </div>
 </section>
+
+<footer class="foot">
+  <span class="m"><span aria-hidden="true">👀</span> LookNice</span>
+  <nav>
+    <a href="privacy.html">Privacy</a>
+    <a href="LookNice.dmg" download>Download</a>
+  </nav>
+  <span>&copy; 2026 BobCo. All rights reserved.</span>
+</footer>
+</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
@@ -804,5 +875,24 @@
 })();
 </script>
 
+
+<script>
+(function () {
+  var els = document.querySelectorAll('.rev');
+  if (!els.length) return;
+  if (!('IntersectionObserver' in window)) {
+    Array.prototype.forEach.call(els, function (e) { e.classList.add('in'); });
+    return;
+  }
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (!e.isIntersecting) return;
+      e.target.classList.add('in');
+      io.unobserve(e.target);          // reveal once, not on every pass
+    });
+  }, { threshold: 0.2, rootMargin: '0px 0px -8% 0px' });
+  Array.prototype.forEach.call(els, function (e) { io.observe(e); });
+})();
+</script>
 </body>
 </html>
