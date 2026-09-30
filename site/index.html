@@ -3,13 +3,28 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>LookNice — look at yourself while looking like you're looking at them</title>
-<meta name="description" content="A tiny free Mac app that parks a mirror of your webcam under the lens, so glancing at yourself lands your eyeline on the camera.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%91%80%3C/text%3E%3C/svg%3E">
+<meta name="theme-color" content="#E8EEF2">
+<title>LookNice — the meeting tool for Narcissists™!</title>
+<meta name="description" content="Look at yourself while looking like you're looking at them. A tiny free Mac app that parks a mirror of your webcam right under the lens.">
 
-<meta property="og:title" content="LookNice">
-<meta property="og:description" content="Look at yourself while looking like you're looking at them.">
+<meta property="og:title" content="LookNice — the meeting tool for Narcissists™!">
+<meta property="og:description" content="Look at yourself while looking like you're looking at them. A tiny free Mac app that parks a mirror of your webcam right under the lens.">
 <meta property="og:type" content="website">
+<meta property="og:image" content="https://look-nice.vercel.app/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="The LookNice app icon: a pair of eyes">
+<meta name="twitter:image" content="https://look-nice.vercel.app/og.jpg">
+<meta property="og:site_name" content="LookNice">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="LookNice — the meeting tool for Narcissists™!">
+<meta name="twitter:description" content="Look at yourself while looking like you're looking at them. A tiny free Mac app that parks a mirror of your webcam right under the lens.">
 
+<link rel="preconnect" href="https://cdnjs.cloudflare.com">
+<!-- No crossorigin here: it must match the plain <script> below, or the
+     browser treats them as different requests and downloads three twice. -->
+<link rel="preload" as="script" href="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,700;12..96,800&family=DM+Mono:wght@400;500&display=swap">
@@ -19,9 +34,14 @@
     --paper: #E8EEF2;
     --ink:   #0F1519;
     --ink-2: #55636D;
-    --ink-3: #8996A1;
+    --ink-3: #636D75;
     --iris:  #16323F;
     --link:  #2E6F8E;
+    --night: #0B1116;
+    --n-1:   #EEF3F6;
+    --n-2:   #93A5B1;
+    --n-3:   #5E717C;
+    --n-acc: #86BAD6;
     --disp:  "Bricolage Grotesque", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     --mono:  "DM Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
   }
@@ -44,9 +64,15 @@
   a { color: var(--link); }
   a:focus-visible { outline: 2px solid var(--link); outline-offset: 3px; border-radius: 4px; }
 
+  /* The hero is its own stacking context so the eyes and the sticker scroll
+     away with it instead of hanging over the section below. */
+  /* Short of a full viewport on purpose: the torn edge shows at the
+     bottom of the first screen and asks to be scrolled. */
+  .hero { position: relative; min-height: 93vh; }
+
   /* The eyes own the right half and bleed off the edge. */
   #eyes {
-    position: fixed;
+    position: absolute;
     top: 0;
     right: 0;
     width: 52vw;
@@ -59,7 +85,7 @@
   .page {
     position: relative;
     z-index: 1;
-    min-height: 100%;
+    min-height: 93vh;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -73,9 +99,8 @@
   .mark {
     display: flex; align-items: center; gap: 9px;
     font-family: var(--mono);
-    font-size: 12.5px;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
+    font-size: 13px;
+    letter-spacing: 0.06em;
     color: var(--ink-2);
   }
   .mark span { font-size: 16px; line-height: 1; }
@@ -105,17 +130,307 @@
   }
   .meta a { color: var(--ink-3); }
 
+
+  /* Sticker. Sits above the eyes (z 0) and the copy (z 1) so it can overlap
+     the pair without the copy being covered. */
+  .sticker {
+    position: absolute;
+    right: 46vw;
+    top: 7vh;
+    z-index: 2;
+    width: clamp(160px, 15.5vw, 218px);
+    aspect-ratio: 1;
+    display: grid;
+    place-items: center;
+    transform: rotate(8deg);
+    pointer-events: none;
+  }
+  .sticker svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .sticker span {
+    position: relative;
+    display: block;
+    width: 78%;
+    text-align: center;
+    color: #FFF6F1;
+    line-height: 1.12;
+    font-size: clamp(10px, 0.92vw, 12px);
+    font-weight: 500;
+    letter-spacing: 0.005em;
+  }
+  .sticker b {
+    display: block;
+    font-weight: 800;
+    font-size: 1.44em;
+    letter-spacing: -0.02em;
+    margin-top: 2px;
+  }
+  .sticker sup { font-size: 0.5em; vertical-align: super; font-weight: 600; }
+
+
+  /* ---------- Features ---------- */
+
+  /* The scroll payoff: the page changes register here. Full-bleed dark, with
+     the laptop lit against it. */
+  .deep {
+    position: relative;
+    background: var(--night);
+    color: var(--n-1);
+    overflow: hidden;
+  }
+  /* A wash of the wallpaper's own colour, so the screen looks like it is
+     throwing light into the room. */
+  .deep::before {
+    content: "";
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(58% 50% at 70% 42%, rgba(96, 152, 200, 0.30), transparent 70%),
+      radial-gradient(40% 36% at 86% 32%, rgba(156, 112, 182, 0.20), transparent 72%),
+      radial-gradient(34% 30% at 52% 88%, rgba(44, 110, 126, 0.14), transparent 72%);
+    pointer-events: none;
+  }
+  /* Torn edges. Two diagonal gradients per strip leave a downward V in each
+     tile; repeated across, that is the zigzag. Tiles are a fixed pixel size,
+     so the teeth stay the same size at every width instead of stretching. */
+  .tear {
+    position: absolute; left: 0; right: 0; height: 17px; z-index: 2;
+    --w: 38px;
+    background-image:
+      linear-gradient(to bottom right, var(--paper) 50%, transparent 50.5%),
+      linear-gradient(to bottom left,  var(--paper) 50%, transparent 50.5%);
+    background-size: var(--w) 100%;
+    background-repeat: repeat-x;
+    pointer-events: none;
+  }
+  .tear.top { top: 0; }
+  .tear.bot { bottom: 0; transform: scaleY(-1); }
+
+  .feat {
+    position: relative;
+    z-index: 1;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 15vh 40px 13vh;
+    display: grid;
+    grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);
+    gap: clamp(32px, 5vw, 78px);
+    align-items: center;
+  }
+
+
+  /* Reveal on entry, staggered. */
+  .rev { opacity: 0; transform: translateY(16px); }
+  .rev.in {
+    opacity: 1; transform: none;
+    transition: opacity .8s cubic-bezier(.22,1,.36,1) var(--d, 0s),
+                transform .8s cubic-bezier(.22,1,.36,1) var(--d, 0s);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .rev { opacity: 1; transform: none; }
+  }
+
+  .flist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+  .flist button {
+    display: block; width: 100%; text-align: left;
+    font: inherit; color: var(--n-2);
+    background: none; border: 0; border-left: 2px solid transparent;
+    padding: 13px 0 13px 18px; margin: 0; cursor: pointer;
+    transition: color .28s ease, border-color .28s ease, opacity .28s ease;
+    opacity: 0.74;
+  }
+  .flist button b { display: block; color: var(--n-1); font-weight: 700; font-size: 17.5px; letter-spacing: -0.012em; }
+  .flist button i { font-style: normal; font-size: 15px; }
+  .flist li.on button { opacity: 1; border-left-color: var(--n-acc); }
+  .flist button:hover { opacity: 1; }
+  .flist button:focus-visible { outline: 2px solid var(--n-acc); outline-offset: 2px; border-radius: 3px; }
+
+  /* ---------- Laptop ---------- */
+
+  .demo { display: flex; justify-content: center; }
+  .laptop { width: 100%; max-width: 560px; }
+
+  .lid {
+    position: relative;
+    aspect-ratio: 16 / 10.4;
+    background: linear-gradient(168deg, #39434A, #1B2227);
+    border-radius: 15px;
+    padding: 1.6%;
+    box-shadow: 0 40px 80px -30px rgba(0, 0, 0, 0.85),
+                0 0 0 1px rgba(255, 255, 255, 0.06);
+  }
+  .screen {
+    position: relative;
+    width: 100%; height: 100%;
+    border-radius: 7px;
+    overflow: hidden;
+  }
+  .notch {
+    position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+    width: 23%; height: 5.6%;
+    background: #1B2227;
+    border-radius: 0 0 7px 7px;
+    z-index: 4;
+  }
+  .deck {
+    width: 112%; margin: 0 -6%;
+    height: 14px;
+    background: linear-gradient(#C7D2DA, #93A3AE);
+    border-radius: 0 0 11px 11px;
+    clip-path: polygon(3.5% 0, 96.5% 0, 100% 100%, 0 100%);
+  }
+  .deck::after {
+    content: ""; display: block; width: 13%; height: 34%;
+    margin: 0 auto; border-radius: 0 0 6px 6px;
+    background: rgba(15, 21, 25, 0.22);
+  }
+
+  /* Desktop: wallpaper + menu bar, nothing else. */
+  .wall {
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(85% 70% at 22% 12%, #6E9BC4 0%, transparent 58%),
+      radial-gradient(75% 65% at 82% 26%, #A87FB8 0%, transparent 60%),
+      radial-gradient(90% 70% at 62% 88%, #2C6E7E 0%, transparent 62%),
+      linear-gradient(158deg, #3C6A92, #21445E 55%, #16293A);
+  }
+  .wall::after {
+    content: ""; position: absolute; inset: 0;
+    background: radial-gradient(60% 45% at 50% 4%, rgba(255,255,255,.14), transparent 70%);
+  }
+  .menubar {
+    position: absolute; top: 0; left: 0; right: 0; height: 5.6%;
+    z-index: 2;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 2%;
+    background: rgba(9, 14, 18, 0.34);
+    backdrop-filter: blur(6px);
+    font-size: 6px;
+  }
+  .mb { display: flex; align-items: center; gap: 6px; }
+  .mb s { display: block; width: 13px; height: 3px; border-radius: 2px; background: rgba(255,255,255,.5); text-decoration: none; }
+  .mb s.sm { width: 8px; }
+  .mb em { font-style: normal; font-size: 7.5px; line-height: 1; filter: saturate(1.1); }
+  .mb u { display: block; width: 9px; height: 5px; border-radius: 1.5px; background: rgba(255,255,255,.55); text-decoration: none; }
+
+  /* ---------- The app ---------- */
+
+  /* .app carries the geometry; .mirror clips the feed; .dock sits outside the
+     clip so it survives eye-only mode, and stays opaque when the feed fades —
+     which is what the app itself does. */
+  .app {
+    position: absolute; top: 4.4%; left: 50%;
+    z-index: 3;
+    width: 23%; height: 33.4%;
+    transform: translateX(-50%);
+    transition: width .5s cubic-bezier(.22,1,.36,1),
+                height .5s cubic-bezier(.22,1,.36,1),
+                left .62s cubic-bezier(.3,1.35,.5,1);
+  }
+  /* Eye-only just shortens it. Docked under the notch the app keeps the
+     notch's width whatever the mode, so the width does not change here. */
+  .app.eyes { height: 9.4%; }
+  .app.grow { animation: grow .8s cubic-bezier(.22,1,.36,1) both; }
+  @keyframes grow { from { height: 0; opacity: 0; } }
+
+  .mirror {
+    position: absolute; inset: 0;
+    background: #0C1114;
+    border-radius: 0 0 9px 9px;   /* square top, round bottom — like the app */
+    overflow: hidden;
+    box-shadow: 0 10px 22px -7px rgba(0, 0, 0, 0.7),
+                inset 0 0 0 1px rgba(255, 255, 255, 0.14);
+    transition: opacity .45s ease;
+  }
+  .app.ghost .mirror { opacity: 0.4; }
+
+  /* The capture. object-fit stops it stretching into the 3:4 box; a square
+     source is cropped left and right, so vertical position maps 1:1 to the
+     source — which is what the eye crop below relies on. */
+  .feed {
+    position: absolute; left: 50%; top: 50%;
+    width: 100%; height: auto; aspect-ratio: 3 / 4;
+    object-fit: cover; object-position: 50% 42%;
+    transform: translate(-50%, -50%) scale(1.06);
+    transition: transform .5s cubic-bezier(.22,1,.36,1), filter .28s ease;
+  }
+  .app.switching .feed { filter: blur(7px); }
+  /* Eye-only is mostly a CROP, not a zoom: the band is the notch's width, so
+     the full face width already fits. Only a little magnification, then
+     translateY(4%) to bring the eye line (at ~48% of the frame) to the centre. */
+  .app.eyes .feed { transform: translate(-50%, -50%) scale(1.3) translateY(1%); }
+
+  .dock {
+    position: absolute; left: 50%; bottom: 7%;
+    transform: translateX(-50%) translateY(5px);
+    display: flex; gap: 9px; align-items: center;
+    padding: 4px 8px; border-radius: 99px;
+    background: rgba(24, 31, 36, 0.86);
+    backdrop-filter: blur(4px);
+    opacity: 0; pointer-events: none;
+    transition: opacity .24s ease, transform .24s ease;
+  }
+  .app.hover .dock { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .app.eyes .dock { bottom: auto; top: calc(100% + 5px); }
+  .dock svg { display: block; width: 11px; height: 11px; color: #fff; opacity: .82; }
+  .dock span { display: grid; place-items: center; width: 15px; height: 15px; border-radius: 50%; transition: background .18s ease; }
+  .dock span.hit { background: rgba(255, 255, 255, 0.26); }
+
+  /* ---------- Pointer ---------- */
+
+  .cursor {
+    position: absolute; z-index: 5;
+    left: 74%; top: 96%;
+    width: 15px; height: 15px;
+    margin: -1px 0 0 -1px;
+    opacity: 0;
+    transition: left .78s cubic-bezier(.4,0,.2,1), top .78s cubic-bezier(.4,0,.2,1), opacity .3s ease;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,.55));
+  }
+  .cursor.show { opacity: 1; }
+  .cursor svg { display: block; width: 100%; height: 100%; }
+  .cursor::after {
+    content: ""; position: absolute; left: 0; top: 0;
+    width: 17px; height: 17px; margin: -4px 0 0 -4px;
+    border-radius: 50%; border: 1.5px solid rgba(255,255,255,.9);
+    opacity: 0; transform: scale(.3);
+  }
+  .cursor.tap::after { animation: tap .45s ease-out; }
+  @keyframes tap {
+    0%   { opacity: .9; transform: scale(.3); }
+    100% { opacity: 0;  transform: scale(1.7); }
+  }
+
+
+  .foot {
+    position: relative; z-index: 1;
+    max-width: 1180px; margin: 0 auto;
+    padding: 46px 40px 54px;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 18px; flex-wrap: wrap;
+    font-family: var(--mono); font-size: 11.5px; letter-spacing: .04em;
+    color: var(--ink-3);
+  }
+  .foot .m { display: inline-flex; align-items: center; gap: 8px; color: var(--ink-2); }
+  .foot nav { display: flex; gap: 20px; }
+  .foot a { color: var(--ink-2); text-decoration: none; border-bottom: 1px solid rgba(85,99,109,.32); padding-bottom: 1px; }
+  .foot a:hover { color: var(--ink); border-bottom-color: currentColor; }
+
   @media (max-width: 860px) {
     #eyes { position: absolute; width: 100%; height: 42vh; top: 0; right: 0; }
+    .sticker { position: absolute; width: 132px; right: 5vw; top: calc(42vh - 74px); }
     .page { justify-content: flex-start; padding: calc(42vh + 28px) 24px 56px; gap: 28px; }
     .col { max-width: none; }
     .dl { width: 100%; justify-content: center; }
+    .feat { grid-template-columns: 1fr; gap: 34px; }
+    .feat { padding: 9vh 24px 8vh; }
+    .foot { padding: 0 24px 40px; font-size: 11px; }
+    .demo { order: -1; }
   }
 </style>
 </head>
 <body>
 
-<canvas id="eyes"></canvas>
+<div class="hero">
+<canvas id="eyes" aria-hidden="true"></canvas>
 
 <main class="page">
   <div class="col">
@@ -127,7 +442,7 @@
       <span class="c">looking at them</span>
     </h1>
 
-    <p class="what">A tiny mirror of your webcam, parked right under the lens. Your eyes go to it — which happens to be exactly where the camera is.</p>
+    <p class="what">Put your face right by your webcam so you look more engaged while staring at yourself in meetings.</p>
 
     <a class="dl" href="LookNice.dmg" download>
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -138,10 +453,80 @@
 
     <p class="meta">
       <span>Free · macOS 12+ · Under 1 MB</span>
-      <span><a href="privacy.html">Privacy</a> · © 2026 BobCo.</span>
     </p>
   </div>
 </main>
+
+<aside class="sticker">
+  <svg viewBox="0 0 200 200" aria-hidden="true">
+    <path d="M100.0,0.0 L112.24,14.88 L128.17,4.05 L135.73,21.77 L154.06,15.87 L156.32,35.01 L175.57,34.51 L172.35,53.5 L190.96,58.46 L182.52,75.77 L198.98,85.77 L186.0,100.0 L198.98,114.23 L182.52,124.23 L190.96,141.54 L172.35,146.5 L175.57,165.49 L156.32,164.99 L154.06,184.13 L135.73,178.23 L128.17,195.95 L112.24,185.12 L100.0,200.0 L87.76,185.12 L71.83,195.95 L64.27,178.23 L45.94,184.13 L43.68,164.99 L24.43,165.49 L27.65,146.5 L9.04,141.54 L17.48,124.23 L1.02,114.23 L14.0,100.0 L1.02,85.77 L17.48,75.77 L9.04,58.46 L27.65,53.5 L24.43,34.51 L43.68,35.01 L45.94,15.87 L64.27,21.77 L71.83,4.05 L87.76,14.88 Z" fill="#E4572E"/>
+  </svg>
+  <span>The meeting tool for<b>Narcissists<sup>&#8482;</sup>!</b></span>
+</aside>
+</div>
+
+<div class="deep">
+<div class="tear top" aria-hidden="true"></div>
+<div class="tear bot" aria-hidden="true"></div>
+<section class="feat" id="features">
+  <div class="rev">
+    <ul class="flist">
+      <li class="on"><button type="button" data-mode="face">
+        <b>LookNice sits right under your webcam.</b>
+        <i>Notch friendly &mdash; it grows out of the notch and hugs the top of the screen.</i>
+      </button></li>
+      <li><button type="button" data-mode="eyes">
+        <b>Eye-only mode.</b>
+        <i>Just the peepers.</i>
+      </button></li>
+      <li><button type="button" data-mode="ghost">
+        <b>Transparent mode.</b>
+        <i>Fade it down and read straight through it.</i>
+      </button></li>
+    </ul>
+  </div>
+
+  <div class="demo rev" style="--d:.12s">
+    <div class="laptop">
+      <div class="lid">
+        <div class="screen">
+          <div class="wall" aria-hidden="true"></div>
+          <div class="menubar" aria-hidden="true">
+            <div class="mb"><s class="sm"></s><s></s><s class="sm"></s><s class="sm"></s></div>
+            <div class="mb"><em>&#128064;</em><u></u><u></u><s class="sm"></s></div>
+          </div>
+          <div class="notch" aria-hidden="true"></div>
+
+          <div class="app" id="app" role="img" aria-label="LookNice docked below the notch, cycling through face, eye-only and transparent modes">
+            <div class="mirror"><img class="feed" src="face.jpg" alt="" width="560" height="560" loading="lazy" decoding="async"></div>
+            <div class="dock" aria-hidden="true">
+              <span data-btn="face"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="12" cy="10" r="3"/><path d="M6.5 19a5.5 5.5 0 0 1 11 0"/></svg></span>
+              <span data-btn="eyes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><ellipse cx="7.5" cy="12" rx="5" ry="4"/><ellipse cx="16.5" cy="12" rx="5" ry="4"/><circle cx="7.5" cy="12" r="1.6" fill="currentColor"/><circle cx="16.5" cy="12" r="1.6" fill="currentColor"/></svg></span>
+              <span data-btn="ghost"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18z" fill="currentColor" stroke="none"/></svg></span>
+            </div>
+          </div>
+
+          <div class="cursor" id="cursor" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M5 2.5 19.5 12 12.8 13.3 9.6 20 5 2.5Z" fill="#fff" stroke="#11171B" stroke-width="1.3" stroke-linejoin="round"/></svg>
+          </div>
+        </div>
+      </div>
+      <div class="deck"></div>
+    </div>
+  </div>
+</section>
+
+
+</div>
+
+<footer class="foot">
+  <span class="m"><span aria-hidden="true">👀</span> LookNice</span>
+  <nav>
+    <a href="privacy.html">Privacy</a>
+    <a href="LookNice.dmg" download>Download</a>
+  </nav>
+  <span>&copy; 2026 BobCo. All rights reserved.</span>
+</footer>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
@@ -313,7 +698,17 @@
     dl.addEventListener('blur', settle);
   }
 
+  // The page scrolls now, so don't keep drawing the hero once it is gone.
+  var onScreen = true;
+  if ('IntersectionObserver' in window) {
+    new IntersectionObserver(function (es) {
+      es.forEach(function (e) { onScreen = e.isIntersecting; });
+    }, { threshold: 0 }).observe(canvas);
+  }
+
   function frame(t) {
+    if (!onScreen) { requestAnimationFrame(frame); return; }
+
     // Before the pointer shows up (and on touch) drift on a slow figure.
     if (!pointerSeen) {
       want.set(Math.sin(t / 3000) * 9, Math.cos(t / 4200) * 5, 26);
@@ -356,5 +751,167 @@
 })();
 </script>
 
+
+<script>
+(function () {
+  var app    = document.getElementById('app');
+  var cursor = document.getElementById('cursor');
+  var items  = Array.prototype.slice.call(document.querySelectorAll('.flist li'));
+  if (!app || !cursor) return;
+
+  var dockBtns = {};
+  Array.prototype.forEach.call(app.querySelectorAll('.dock span'), function (el) {
+    dockBtns[el.dataset.btn] = el;
+  });
+
+  var slow = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var timers = [], mode = 'face', ghost = false;
+
+  function at(ms, fn) { timers.push(setTimeout(fn, ms)); }
+  function clear() { timers.forEach(clearTimeout); timers = []; }
+
+  // --- primitives -----------------------------------------------------------
+
+  function move(xPct, yPct) { cursor.style.left = xPct + '%'; cursor.style.top = yPct + '%'; }
+
+  function tap(btn) {
+    cursor.classList.remove('tap');
+    void cursor.offsetWidth;          // restart the ripple
+    cursor.classList.add('tap');
+    if (btn && dockBtns[btn]) {
+      dockBtns[btn].classList.add('hit');
+      setTimeout(function () { dockBtns[btn].classList.remove('hit'); }, 220);
+    }
+  }
+
+  // The blur is the app's own trick for covering the crop settling.
+  function blurSwap(fn) {
+    app.classList.add('switching');
+    setTimeout(fn, 90);
+    setTimeout(function () { app.classList.remove('switching'); }, 380);
+  }
+
+  function setMode(next) {
+    mode = next;
+    blurSwap(function () { app.classList.toggle('eyes', mode === 'eyes'); });
+    sync();
+  }
+
+  function setGhost(on) { ghost = on; app.classList.toggle('ghost', on); sync(); }
+
+  // The feature list reflects whatever the app is doing.
+  function sync() {
+    var showing = ghost ? 'ghost' : mode;
+    items.forEach(function (li) {
+      li.classList.toggle('on', li.querySelector('button').dataset.mode === showing);
+    });
+  }
+
+  // Where each dock button sits, as a % of the screen. The dock is centred on
+  // the app, so these are offsets from its middle.
+  function dockPos(which) {
+    var r = app.querySelector('.dock').getBoundingClientRect();
+    var s = app.closest('.screen').getBoundingClientRect();
+    var b = dockBtns[which].getBoundingClientRect();
+    return {
+      x: ((b.left + b.width / 2 - s.left) / s.width) * 100,
+      y: ((b.top + b.height / 2 - s.top) / s.height) * 100
+    };
+  }
+
+  function toDock(which) { var d = dockPos(which); move(d.x, d.y); }
+
+  // --- the loop -------------------------------------------------------------
+
+  function reset() {
+    clear();
+    app.classList.remove('eyes', 'ghost', 'hover', 'switching');
+    mode = 'face'; ghost = false; sync();
+    cursor.classList.remove('show');
+    move(74, 96);
+  }
+
+  function run() {
+    reset();
+
+    //  the pointer arrives and the dock reveals on hover
+    at(700,  function () { cursor.classList.add('show'); move(58, 62); });
+    at(1500, function () { move(50, 26); });
+    at(2250, function () { app.classList.add('hover'); });
+
+    //  eye-only
+    at(2900, function () { toDock('eyes'); });
+    at(3700, function () { tap('eyes'); setMode('eyes'); });
+
+    //  transparent, on top of eye-only — the dock stays solid as the feed fades
+    at(5000, function () { toDock('ghost'); });
+    at(5700, function () { tap('ghost'); setGhost(true); });
+
+    //  back to the full face
+    at(7000, function () { toDock('face'); });
+    at(7700, function () { tap('face'); setGhost(false); setMode('face'); });
+
+    //  drag it off the notch and let it settle back
+    at(9000, function () { move(50, 14); });
+    at(9700, function () { app.classList.remove('hover'); app.style.left = '33%'; move(33, 14); });
+    at(10900, function () { app.style.left = '50%'; move(50, 14); });
+
+    //  and away
+    at(12100, function () { move(76, 92); cursor.classList.remove('show'); });
+    at(13000, run);
+  }
+
+  function stop() { clear(); }
+
+  // Let the list drive it too — a click takes over from the loop.
+  items.forEach(function (li) {
+    li.querySelector('button').addEventListener('click', function () {
+      clear();
+      cursor.classList.remove('show');
+      app.classList.add('hover');
+      var m = this.dataset.mode;
+      if (m === 'ghost') { setGhost(true); setMode('face'); }
+      else { setGhost(false); setMode(m); }
+      at(4200, run);                 // hand back to the loop after a beat
+    });
+  });
+
+  sync();
+
+  if (slow) { app.classList.remove('hover'); return; }   // static for reduced motion
+
+  if ('IntersectionObserver' in window) {
+    var started = false;
+    new IntersectionObserver(function (es) {
+      es.forEach(function (e) {
+        if (e.isIntersecting) {
+          if (!started) { started = true; app.classList.add('grow'); }
+          run();
+        } else stop();
+      });
+    }, { threshold: 0.35 }).observe(app);
+  } else run();
+})();
+</script>
+
+
+<script>
+(function () {
+  var els = document.querySelectorAll('.rev');
+  if (!els.length) return;
+  if (!('IntersectionObserver' in window)) {
+    Array.prototype.forEach.call(els, function (e) { e.classList.add('in'); });
+    return;
+  }
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (!e.isIntersecting) return;
+      e.target.classList.add('in');
+      io.unobserve(e.target);          // reveal once, not on every pass
+    });
+  }, { threshold: 0.2, rootMargin: '0px 0px -8% 0px' });
+  Array.prototype.forEach.call(els, function (e) { io.observe(e); });
+})();
+</script>
 </body>
 </html>
