@@ -30,6 +30,17 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,700;12..96,800&family=DM+Mono:wght@400;500&display=swap">
 
 <style>
+  /* São Torpes by Pedro Miguel Xarepe — behance.net/gallery/147152797
+     Subset to Latin-1 + common punctuation and converted to woff2 (47 KB otf
+     -> 10 KB). Headline only; body copy stays on Bricolage. */
+  @font-face {
+    font-family: "Sao Torpes";
+    src: url("saotorpes.woff2") format("woff2");
+    font-weight: 400;
+    font-display: swap;
+  }
+</style>
+<style>
   :root {
     --paper: #E8EEF2;
     --ink:   #0F1519;
@@ -43,6 +54,7 @@
     --n-3:   #5E717C;
     --n-acc: #86BAD6;
     --disp:  "Bricolage Grotesque", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --show:  "Sao Torpes", "Bricolage Grotesque", Impact, sans-serif;
     --mono:  "DM Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
   }
 
@@ -105,7 +117,13 @@
   }
   .mark span { font-size: 16px; line-height: 1; }
 
-  h1 { margin: 0; font-weight: 800; letter-spacing: -0.032em; line-height: 0.93; }
+  h1 {
+    margin: 0;
+    font-family: var(--show);
+    font-weight: 400;      /* the face ships in one weight */
+    letter-spacing: -0.012em;
+    line-height: 0.92;
+  }
   h1 .a { display: block; font-size: clamp(40px, 6.6vw, 82px); }
   h1 .b { display: block; font-size: clamp(27px, 4.3vw, 53px); color: var(--ink-2); letter-spacing: -0.024em; }
   h1 .c { display: block; font-size: clamp(20px, 2.9vw, 36px); color: var(--ink-3); letter-spacing: -0.018em; }
