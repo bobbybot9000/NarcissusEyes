@@ -1,0 +1,581 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%91%80%3C/text%3E%3C/svg%3E">
+<meta name="theme-color" content="#081712">
+<title>LookNice — The Trailer</title>
+<meta name="description" content="A one-minute pitch for a one-megabyte app.">
+<meta property="og:title" content="LookNice — The Trailer">
+<meta property="og:description" content="A one-minute pitch for a one-megabyte app.">
+<meta property="og:image" content="https://look-nice.vercel.app/og.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://look-nice.vercel.app/og.jpg">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,700;12..96,800&family=DM+Mono:wght@400;500&display=swap">
+
+<style>
+  @font-face {
+    font-family: "Sao Torpes";
+    src: url("saotorpes.woff2") format("woff2");
+    font-weight: 400;
+    font-display: swap;
+  }
+
+  :root {
+    --paper: #EAF0E9;
+    --ink:   #101614;
+    --night: #081712;
+    --n-1:   #E8F0EC;
+    --n-2:   #93AFA5;
+    --acc:   #76C2C8;   /* 淡浅葱 */
+    --cob:   #7CB07E;   /* 青磁色 */
+    --sea:   #0E725A;   /* 若竹色 */
+    --hiwa:  #A4A600;   /* 鶸色  */
+    --disp:  "Bricolage Grotesque", -apple-system, BlinkMacSystemFont, sans-serif;
+    --mono:  "DM Mono", ui-monospace, Menlo, monospace;
+    --show:  "Sao Torpes", "Bricolage Grotesque", Impact, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: #05100C;
+    color: var(--n-1);
+    font-family: var(--disp);
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+  }
+
+  /* ---------- frame ---------- */
+
+  #frame {
+    position: relative;
+    width: min(100vw, calc(100vh * 16 / 9));
+    aspect-ratio: 16 / 9;
+    background: var(--night);
+    overflow: hidden;
+    box-shadow: 0 30px 90px -30px #000;
+  }
+  #frame::after {           /* vignette */
+    content: "";
+    position: absolute; inset: 0; z-index: 60; pointer-events: none;
+    background: radial-gradient(120% 90% at 50% 45%, transparent 45%, rgba(0,0,0,.55) 100%);
+  }
+
+  .wash {
+    position: absolute; inset: 0; z-index: 0;
+    background:
+      radial-gradient(60% 55% at 28% 30%, rgba(118,194,200,.26), transparent 70%),
+      radial-gradient(50% 45% at 78% 70%, rgba(124,176,126,.20), transparent 72%);
+    transition: opacity .5s ease, filter .5s ease;
+  }
+
+  /* ---------- the laptop ---------- */
+
+  #rig {
+    position: absolute; z-index: 10;
+    left: 50%; top: 50%;
+    width: 56%;
+    transform: translate(-50%, -50%) scale(.6);
+    opacity: 0;
+    transition: transform .7s cubic-bezier(.22,1,.36,1), opacity .5s ease, filter .5s ease;
+  }
+  #rig.in     { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  #rig.push   { transform: translate(-50%, -46%) scale(1.5); }
+  #rig.notch  { transform: translate(-50%, -8%) scale(3.1); }
+  #rig.away   { opacity: 0; transform: translate(-50%, -50%) scale(.82); }
+  #rig.grey   { filter: saturate(.15) brightness(.7); }
+
+  .lid {
+    position: relative; aspect-ratio: 16/10.4;
+    background: linear-gradient(168deg, #39434A, #1B2227);
+    border-radius: 14px; padding: 1.5%;
+    box-shadow: 0 36px 70px -26px rgba(0,0,0,.9), 0 0 0 1px rgba(255,255,255,.07);
+  }
+  .scr { position: relative; width: 100%; height: 100%; border-radius: 6px; overflow: hidden; }
+  .desk {
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(85% 70% at 22% 12%, #76C2C8 0%, transparent 58%),
+      radial-gradient(75% 65% at 82% 26%, #7CB07E 0%, transparent 60%),
+      radial-gradient(90% 70% at 62% 88%, #0E725A 0%, transparent 62%),
+      linear-gradient(158deg, #2F7E82, #17544A 55%, #10302B);
+  }
+  .bar {
+    position: absolute; top: 0; left: 0; right: 0; height: 5.6%; z-index: 2;
+    background: rgba(9,14,18,.34); display: flex; align-items: center;
+    justify-content: space-between; padding: 0 2%;
+  }
+  .bar s { display: block; width: 9px; height: 2.5px; border-radius: 2px; background: rgba(255,255,255,.5); }
+  .bar div { display: flex; gap: 5px; align-items: center; }
+  .bar em { font-style: normal; font-size: 7px; }
+
+  .notch {
+    position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+    width: 23%; height: 5.6%; background: #1B2227;
+    border-radius: 0 0 6px 6px; z-index: 4;
+  }
+  .notch::after {           /* lens */
+    content: ""; position: absolute; top: 50%; left: 34%;
+    transform: translate(-50%,-50%);
+    height: 40%; aspect-ratio: 1; border-radius: 50%;
+    background: radial-gradient(circle at 36% 30%, #55666F 0%, #1A242A 48%, #05090B 100%);
+    box-shadow: 0 0 0 1px rgba(255,255,255,.06), 0 0 4px rgba(120,190,200,.2);
+    transition: box-shadow .3s ease;
+  }
+  .notch.hot::after { box-shadow: 0 0 0 2px rgba(118,194,200,.9), 0 0 18px 4px rgba(118,194,200,.8); }
+
+  /* call tiles */
+  .grid { position: absolute; inset: 9% 5% 13%; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 3%; z-index: 1; }
+  .tile { background: rgba(10,22,20,.55); border-radius: 5px; position: relative; overflow: hidden; }
+  .tile::after {
+    content: ""; position: absolute; left: 50%; top: 52%; transform: translate(-50%,-50%);
+    width: 34%; aspect-ratio: 1; border-radius: 50%; background: rgba(255,255,255,.16);
+  }
+  .tile.me { outline: 2px solid var(--hiwa); outline-offset: -2px; }
+  .tile.me::after { background: rgba(164,166,0,.5); }
+  .tile.me.ping { animation: ping 1.1s ease-in-out infinite; }
+  @keyframes ping { 0%,100% { outline-color: var(--hiwa); } 50% { outline-color: rgba(164,166,0,.25); } }
+
+  /* the app */
+  .app {
+    position: absolute; top: 5.0%; left: 50%; transform: translateX(-50%);
+    width: 23%; height: 33.4%; z-index: 3;
+    opacity: 0;
+    transition: width .5s cubic-bezier(.22,1,.36,1), height .5s cubic-bezier(.22,1,.36,1),
+                opacity .4s ease;
+  }
+  .app.on    { opacity: 1; }
+  .app.band  { height: 9.4%; }
+  .app.ghost .mir { opacity: .4; }
+  .mir {
+    position: absolute; inset: 0; background: #0C1114; overflow: hidden;
+    border-radius: 0 0 7px 7px;
+    box-shadow: 0 10px 22px -7px rgba(0,0,0,.7), inset 0 0 0 1px rgba(255,255,255,.14);
+    transition: opacity .45s ease;
+  }
+  .mir img {
+    position: absolute; left: 50%; top: 50%;
+    width: 100%; aspect-ratio: 3/4; object-fit: cover;
+    transform: translate(-50%,-50%) scale(1.06);
+    transition: transform .5s cubic-bezier(.22,1,.36,1);
+  }
+  .app.band .mir img { transform: translate(-50%,-50%) scale(1.3) translateY(1%); }
+
+  /* pointing arrow */
+  .arrow {
+    position: absolute; z-index: 20; opacity: 0;
+    font-family: var(--mono); font-size: clamp(9px, .95vw, 15px);
+    color: var(--hiwa); letter-spacing: .06em;
+    transition: opacity .3s ease;
+    text-shadow: 0 2px 10px rgba(0,0,0,.8);
+  }
+  .arrow.on { opacity: 1; animation: bob 1.1s ease-in-out infinite; }
+  @keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+  #aDown { left: 14%; bottom: 20%; }
+  #aUp   { left: 50%; top: 13%; transform: translateX(-50%); }
+
+  /* ---------- type ---------- */
+
+  .big {
+    position: absolute; z-index: 40; left: 50%; top: 50%;
+    transform: translate(-50%,-50%);
+    width: 86%; text-align: center;
+    font-family: var(--show); font-weight: 400;
+    font-size: clamp(34px, 9vw, 140px); line-height: .9;
+    letter-spacing: -.01em; color: var(--n-1);
+    opacity: 0; pointer-events: none;
+  }
+  .big.on { animation: slam .5s cubic-bezier(.2,.9,.2,1) forwards; }
+  @keyframes slam {
+    0%   { opacity: 0; transform: translate(-50%,-50%) scale(2.1); filter: blur(10px); }
+    60%  { opacity: 1; transform: translate(-50%,-50%) scale(.95); filter: blur(0); }
+    100% { opacity: 1; transform: translate(-50%,-50%) scale(1); }
+  }
+  .big.out { animation: none; opacity: 0; transition: opacity .25s ease; }
+  .big .sm { display: block; font-family: var(--disp); font-weight: 800;
+             font-size: .3em; letter-spacing: -.02em; color: var(--acc); margin-top: .25em; }
+
+  /* sticker */
+  .stick {
+    position: absolute; z-index: 45; right: 6%; bottom: 15%;
+    width: 23%; aspect-ratio: 1; display: grid; place-items: center;
+    opacity: 0; transform: rotate(8deg);
+  }
+  .stick.on { animation: slap .45s cubic-bezier(.2,.8,.2,1) forwards; }
+  @keyframes slap {
+    0%   { opacity: 0; transform: rotate(-24deg) scale(2.5); }
+    55%  { opacity: 1; transform: rotate(11deg) scale(.9); }
+    75%  { transform: rotate(6.5deg) scale(1.06); }
+    100% { opacity: 1; transform: rotate(8deg) scale(1); }
+  }
+  .stick svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .stick span {
+    position: relative; width: 80%; text-align: center; color: var(--ink);
+    font-weight: 500; line-height: 1.12; font-size: clamp(9px, 1.15vw, 18px);
+  }
+  .stick b { display: block; font-weight: 800; font-size: 1.5em; letter-spacing: -.02em; }
+  .stick sup { font-size: .5em; font-weight: 600; }
+
+  /* captions — the robot's words, always legible */
+  #subs {
+    position: absolute; z-index: 50; left: 50%; bottom: 5.5%;
+    transform: translateX(-50%);
+    width: 84%; text-align: center;
+    font-family: var(--mono); font-size: clamp(11px, 1.45vw, 21px);
+    letter-spacing: .02em; line-height: 1.4;
+    color: var(--n-1);
+    text-shadow: 0 2px 12px rgba(0,0,0,.95), 0 0 4px rgba(0,0,0,.9);
+    opacity: 0; transition: opacity .18s ease;
+  }
+  #subs.on { opacity: 1; }
+  #subs .cur { color: var(--hiwa); }
+
+  /* ---------- end card ---------- */
+
+  #end {
+    position: absolute; inset: 0; z-index: 55;
+    display: grid; place-content: center; justify-items: center; gap: 2.2vh;
+    background: var(--night);
+    opacity: 0; pointer-events: none;
+    transition: opacity .5s ease;
+  }
+  #end.on { opacity: 1; pointer-events: auto; }
+  #end .ico { font-size: clamp(40px, 7vw, 92px); line-height: 1; }
+  #end h2 {
+    margin: 0; font-family: var(--show); font-weight: 400;
+    font-size: clamp(30px, 6.5vw, 96px); letter-spacing: -.01em;
+  }
+  #end p { margin: 0; font-family: var(--mono); font-size: clamp(10px, 1.3vw, 18px); color: var(--n-2); }
+  #end .row { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
+  #end a, #end button {
+    font: inherit; font-family: var(--disp); font-weight: 700;
+    font-size: clamp(12px, 1.35vw, 18px);
+    padding: .75em 1.5em; border-radius: 999px; border: 0; cursor: pointer;
+    text-decoration: none;
+  }
+  #end .go  { background: var(--n-1); color: var(--ink); }
+  #end .re  { background: transparent; color: var(--n-2); box-shadow: inset 0 0 0 1px rgba(147,175,165,.4); }
+
+  /* ---------- gate ---------- */
+
+  #gate {
+    position: absolute; inset: 0; z-index: 80;
+    display: grid; place-content: center; justify-items: center; gap: 2.4vh;
+    background: var(--night);
+    transition: opacity .4s ease;
+  }
+  #gate.off { opacity: 0; pointer-events: none; }
+  #gate .ico { font-size: clamp(40px, 7vw, 86px); line-height: 1; }
+  #gate h1 {
+    margin: 0; font-family: var(--show); font-weight: 400;
+    font-size: clamp(28px, 6vw, 86px); letter-spacing: -.01em; text-align: center;
+  }
+  #gate button {
+    font-family: var(--disp); font-weight: 700; font-size: clamp(13px, 1.5vw, 20px);
+    padding: .8em 2em; border-radius: 999px; border: 0; cursor: pointer;
+    background: var(--n-1); color: var(--ink);
+  }
+  #gate button:hover { background: var(--acc); }
+  #gate small { font-family: var(--mono); font-size: clamp(9px, 1.1vw, 13px); color: var(--n-3, #5E7A70); }
+
+  /* progress */
+  #prog {
+    position: absolute; z-index: 58; left: 0; bottom: 0; height: 2px; width: 0;
+    background: var(--hiwa); opacity: .8;
+  }
+
+  /* flash for the poppy cuts */
+  #flash {
+    position: absolute; inset: 0; z-index: 57; background: var(--n-1);
+    opacity: 0; pointer-events: none;
+  }
+  #flash.hit { animation: fl .22s ease-out; }
+  @keyframes fl { 0% { opacity: .85; } 100% { opacity: 0; } }
+</style>
+</head>
+<body>
+
+<div id="frame">
+  <div class="wash" id="wash"></div>
+
+  <div id="rig">
+    <div class="lid">
+      <div class="scr">
+        <div class="desk"></div>
+        <div class="bar"><div><s></s><s></s><s></s></div><div><em>👀</em><s></s><s></s></div></div>
+        <div class="grid" id="grid">
+          <div class="tile"></div><div class="tile"></div><div class="tile"></div>
+          <div class="tile"></div><div class="tile me" id="me"></div><div class="tile"></div>
+        </div>
+        <div class="notch" id="notch"></div>
+        <div class="app" id="app">
+          <div class="mir"><img src="face.jpg" alt="" width="560" height="560"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="arrow" id="aDown">▼ you</div>
+  <div class="arrow" id="aUp">▲ the camera</div>
+
+  <div class="big" id="big"></div>
+
+  <div class="stick" id="stick">
+    <svg viewBox="0 0 200 200" aria-hidden="true"><path fill="#A4A600" d="M100,0 L112.24,14.88 L128.17,4.05 L135.73,21.77 L154.06,15.87 L156.32,35.01 L175.57,34.51 L172.35,53.5 L190.96,58.46 L182.52,75.77 L198.98,85.77 L186,100 L198.98,114.23 L182.52,124.23 L190.96,141.54 L172.35,146.5 L175.57,165.49 L156.32,164.99 L154.06,184.13 L135.73,178.23 L128.17,195.95 L112.24,185.12 L100,200 L87.76,185.12 L71.83,195.95 L64.27,178.23 L45.94,184.13 L43.68,164.99 L24.43,165.49 L27.65,146.5 L9.04,141.54 L17.48,124.23 L1.02,114.23 L14,100 L1.02,85.77 L17.48,75.77 L9.04,58.46 L27.65,53.5 L24.43,34.51 L43.68,35.01 L45.94,15.87 L64.27,21.77 L71.83,4.05 L87.76,14.88 Z"/></svg>
+    <span>The Meeting Tool for<b>Narcissists<sup>™</sup>!</b></span>
+  </div>
+
+  <div id="subs"></div>
+  <div id="flash"></div>
+  <div id="prog"></div>
+
+  <div id="end">
+    <div class="ico">👀</div>
+    <h2>LookNice</h2>
+    <p>Look at yourself while looking like you're looking at them.</p>
+    <div class="row">
+      <a class="go" href="index.html">Get it &mdash; it's free</a>
+      <button class="re" id="replay">Watch again</button>
+    </div>
+  </div>
+
+  <div id="gate">
+    <div class="ico">👀</div>
+    <h1>LookNice</h1>
+    <button id="play">▶ Play the trailer</button>
+    <small>About a minute &middot; sound on &middot; the voice is not a person</small>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var $ = function (id) { return document.getElementById(id); };
+  var rig = $('rig'), app = $('app'), notch = $('notch'), me = $('me'),
+      big = $('big'), subs = $('subs'), stick = $('stick'), end = $('end'),
+      gate = $('gate'), prog = $('prog'), flash = $('flash'), wash = $('wash'),
+      aDown = $('aDown'), aUp = $('aUp');
+
+  /* ============================ sound ============================ */
+  /* Blippy two-oscillator chiptune, scheduled ahead of the clock so the
+     16ths do not jitter when the main thread is busy animating. */
+
+  var ac = null, musicGain = null, playing = false, step = 0, nextT = 0, pump = null;
+  var BPM = 138, SIXT = 60 / BPM / 4;
+
+  var BASS = [45,null,45,null,48,null,52,null, 45,null,45,null,43,null,41,null];
+  var ARP  = [69,72,76,72,69,72,76,79, 69,72,76,72,67,71,74,79];
+  var LEAD = [null,null,88,null,86,null,84,null, null,null,81,null,84,null,86,null];
+  var leadOn = false;
+
+  function hz(n) { return 440 * Math.pow(2, (n - 69) / 12); }
+
+  function blip(note, t, dur, type, vol, detune) {
+    if (note == null) return;
+    var o = ac.createOscillator(), g = ac.createGain();
+    o.type = type;
+    o.frequency.value = hz(note);
+    if (detune) o.detune.value = detune;
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(vol, t + 0.006);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(musicGain);
+    o.start(t); o.stop(t + dur + 0.02);
+  }
+
+  function hat(t) {
+    var len = 0.03, buf = ac.createBuffer(1, Math.ceil(ac.sampleRate * len), ac.sampleRate);
+    var d = buf.getChannelData(0);
+    for (var i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length);
+    var s = ac.createBufferSource(); s.buffer = buf;
+    var g = ac.createGain(); g.gain.value = 0.05;
+    s.connect(g); g.connect(musicGain); s.start(t);
+  }
+
+  function tick() {
+    while (nextT < ac.currentTime + 0.12) {
+      var i = step % 16;
+      blip(BASS[i], nextT, SIXT * 1.8, 'square', 0.16, -4);
+      blip(ARP[i],  nextT, SIXT * 0.85, 'square', 0.055, 6);
+      if (leadOn) blip(LEAD[i], nextT, SIXT * 1.4, 'triangle', 0.075);
+      if (i % 2 === 0) hat(nextT);
+      nextT += SIXT; step++;
+    }
+  }
+
+  function audioInit() {
+    if (ac) return;
+    ac = new (window.AudioContext || window.webkitAudioContext)();
+    musicGain = ac.createGain();
+    musicGain.gain.value = 0;
+    musicGain.connect(ac.destination);
+  }
+
+  function musicOn(lead) {
+    leadOn = !!lead;
+    if (!playing) { playing = true; nextT = ac.currentTime + 0.05; pump = setInterval(tick, 25); }
+    musicGain.gain.cancelScheduledValues(ac.currentTime);
+    musicGain.gain.linearRampToValueAtTime(0.9, ac.currentTime + 0.12);
+  }
+  /* The silence IS the joke, so it cuts rather than fades. */
+  function musicOff() {
+    if (!ac) return;
+    musicGain.gain.cancelScheduledValues(ac.currentTime);
+    musicGain.gain.linearRampToValueAtTime(0.0001, ac.currentTime + 0.05);
+  }
+  function musicKill() {
+    musicOff();
+    if (pump) { clearInterval(pump); pump = null; }
+    playing = false;
+  }
+  function sting() {
+    if (!ac) return;
+    var t = ac.currentTime;
+    [69, 76, 81, 88].forEach(function (n, k) {
+      blip(n, t + k * 0.075, 0.5, 'square', 0.13);
+    });
+  }
+
+  /* ============================ voice ============================ */
+
+  var voice = null;
+  function pickVoice() {
+    var vs = window.speechSynthesis ? speechSynthesis.getVoices() : [];
+    if (!vs.length) return null;
+    /* macOS ships genuinely robotic voices; take one if it is there. */
+    var want = /zarvox|trinoids|albert|ralph|fred|whisper|boing/i;
+    var v = vs.filter(function (x) { return want.test(x.name); })[0];
+    if (!v) v = vs.filter(function (x) { return /^en/i.test(x.lang) && /male|david|daniel|alex/i.test(x.name); })[0];
+    if (!v) v = vs.filter(function (x) { return /^en/i.test(x.lang); })[0];
+    return v || vs[0];
+  }
+  if (window.speechSynthesis) {
+    speechSynthesis.onvoiceschanged = function () { voice = pickVoice(); };
+    voice = pickVoice();
+  }
+
+  function say(text) {
+    if (!window.speechSynthesis) return;
+    try {
+      speechSynthesis.cancel();
+      var u = new SpeechSynthesisUtterance(text);
+      if (!voice) voice = pickVoice();
+      if (voice) u.voice = voice;
+      u.rate = 0.98; u.pitch = 0.55; u.volume = 1;
+      speechSynthesis.speak(u);
+    } catch (e) { /* captions carry it */ }
+  }
+
+  /* ============================ script ============================ */
+  /* d = seconds this beat holds. Silence is spelled out, not left to chance. */
+
+  var SCRIPT = [
+    { d: 1.9, vo: "Meetings.",                                    go: function () { musicOn(false); word("MEETINGS."); } },
+    { d: 2.9, vo: "You are in one right now. Probably.",           go: function () { word(null); rig.classList.add('in'); } },
+    { d: 2.9, vo: "These are your colleagues.",                    go: function () { } },
+    { d: 3.2, vo: "And this is where you are looking.",            go: function () { rig.classList.add('push'); me.classList.add('ping'); aDown.classList.add('on'); } },
+
+    { d: 2.6, vo: null,                                            go: function () { musicOff(); } },
+    { d: 2.8, vo: "Everyone can see you doing that.",              go: function () { rig.classList.add('grey'); } },
+
+    { d: 2.6, vo: "The camera is up here.",                        go: function () { musicOn(false); flashHit(); rig.classList.remove('grey','push'); me.classList.remove('ping'); aDown.classList.remove('on'); rig.classList.add('notch'); notch.classList.add('hot'); aUp.classList.add('on'); } },
+    { d: 4.3, vo: "LookNice parks a small mirror of your face directly underneath it.", go: function () { aUp.classList.remove('on'); app.classList.add('on'); } },
+    { d: 3.6, vo: "You stare at yourself. It reads as eye contact.", go: function () { musicOn(true); } },
+
+    { d: 2.9, vo: "Eye-only mode. Just the peepers.",              go: function () { app.classList.add('band'); } },
+    { d: 4.2, vo: "Transparent mode, for reading the document you said you had read.", go: function () { app.classList.remove('band'); app.classList.add('ghost'); } },
+
+    { d: 2.4, vo: "The whole thing is under one megabyte.",        go: function () { app.classList.remove('ghost'); rig.classList.remove('notch'); notch.classList.remove('hot'); } },
+    { d: 2.4, vo: null,                                            go: function () { musicOff(); rig.classList.add('away'); word("0.4 MB"); } },
+    { d: 2.5, vo: "That is the entire application.",               go: function () { } },
+
+    { d: 3.0, vo: "LookNice will not make you a better colleague.", go: function () { musicOn(true); flashHit(); word("IT WON'T MAKE YOU<span class='sm'>a better colleague</span>"); } },
+    { d: 2.8, vo: "It will make you look like one.",               go: function () { word("IT'LL MAKE YOU<span class='sm'>look like one</span>"); stick.classList.add('on'); } },
+
+    { d: 3.4, vo: "Free. No account. No network. No business model.", go: function () { stick.classList.remove('on'); word("FREE"); } },
+    { d: 2.6, vo: null,                                            go: function () { musicOff(); } },
+    { d: 2.8, vo: "We have not thought about that part.",          go: function () { } },
+
+    { d: 4.0, vo: "LookNice. Look at yourself, while looking like you're looking at them.", go: function () { word(null); musicKill(); sting(); end.classList.add('on'); } }
+  ];
+
+  var TOTAL = SCRIPT.reduce(function (a, s) { return a + s.d; }, 0);
+
+  function word(html) {
+    if (!html) { big.classList.remove('on'); big.classList.add('out'); return; }
+    big.classList.remove('on', 'out');
+    void big.offsetWidth;
+    big.innerHTML = html;
+    big.classList.add('on');
+  }
+  function flashHit() {
+    flash.classList.remove('hit'); void flash.offsetWidth; flash.classList.add('hit');
+  }
+  function caption(t) {
+    if (!t) { subs.classList.remove('on'); return; }
+    subs.innerHTML = t + '<span class="cur">_</span>';
+    subs.classList.add('on');
+  }
+
+  /* ============================ clock ============================ */
+
+  var timers = [], raf = null, t0 = 0;
+
+  function reset() {
+    timers.forEach(clearTimeout); timers = [];
+    if (raf) cancelAnimationFrame(raf);
+    if (window.speechSynthesis) speechSynthesis.cancel();
+    musicKill();
+    rig.className = ''; app.className = 'app'; notch.className = 'notch';
+    me.classList.remove('ping');
+    aDown.classList.remove('on'); aUp.classList.remove('on');
+    stick.classList.remove('on'); end.classList.remove('on');
+    big.classList.remove('on'); big.classList.add('out');
+    caption(null); prog.style.width = '0';
+  }
+
+  function run() {
+    reset();
+    audioInit();
+    if (ac.state === 'suspended') ac.resume();
+
+    var at = 0;
+    SCRIPT.forEach(function (beat) {
+      timers.push(setTimeout(function () {
+        if (beat.go) beat.go();
+        caption(beat.vo);
+        if (beat.vo) say(beat.vo);
+      }, at * 1000));
+      at += beat.d;
+    });
+
+    t0 = performance.now();
+    (function frame() {
+      var p = Math.min(1, (performance.now() - t0) / (TOTAL * 1000));
+      prog.style.width = (p * 100) + '%';
+      if (p < 1) raf = requestAnimationFrame(frame);
+    })();
+  }
+
+  $('play').addEventListener('click', function () {
+    gate.classList.add('off');
+    run();
+  });
+  $('replay').addEventListener('click', run);
+
+  /* Space bar replays once it has been started once. */
+  window.addEventListener('keydown', function (e) {
+    if (e.code === 'Space') { e.preventDefault(); if (!gate.classList.contains('off')) { gate.classList.add('off'); } run(); }
+  });
+})();
+</script>
+
+</body>
+</html>
