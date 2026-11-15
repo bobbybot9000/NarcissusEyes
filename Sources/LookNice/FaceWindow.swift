@@ -72,7 +72,13 @@ final class FaceWindow: NSObject {
         panel.hasShadow = true
         panel.isMovableByWindowBackground = false
         panel.ignoresMouseEvents = false
+        #if SCREENSHOTS
+        // App Store screenshots only: Tools/screenshot_build.sh passes this flag.
+        // The Xcode archive never does, so the shipped app stays uncapturable.
+        panel.sharingType = .readOnly
+        #else
         panel.sharingType = .none // excludes this window from screen capture / screen share
+        #endif
         panel.contentView = faceView
 
         super.init()
