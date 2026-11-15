@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Mac App Store distribution. Exporting with this re-signs the archive
+         with an Apple Distribution certificate and produces the .pkg that
+         App Store Connect accepts. -->
+    <key>method</key>
+    <string>app-store-connect</string>
+
+    <key>teamID</key>
+    <string>YTLXVW7AA5</string>
+
+    <key>signingStyle</key>
+    <string>automatic</string>
+
+    <!-- Ship dSYMs so App Store Connect can symbolicate any crash reports. -->
+    <!-- Send the package straight to App Store Connect using the account
+         signed in to Xcode, instead of leaving a .pkg for Transporter. -->
+    <key>destination</key>
+    <string>upload</string>
+
+    <key>uploadSymbols</key>
+    <true/>
+</dict>
+</plist>
